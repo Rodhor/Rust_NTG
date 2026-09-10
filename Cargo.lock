@@ -3,5 +3,27 @@
 version = 4
 
 [[package]]
-name = "Rust_NTG"
+name = "db"
+version = "0.1.0"
+
+[[package]]
+name = "io"
+version = "0.1.0"
+
+[[package]]
+name = "ntg-app"
+version = "0.1.0"
+dependencies = [
+ "db",
+ "io",
+ "ntg-core",
+ "sftp",
+]
+
+[[package]]
+name = "ntg-core"
+version = "0.1.0"
+
+[[package]]
+name = "sftp"
 version = "0.1.0"

@@ -1,0 +1,10 @@
+[package]
+name = "ntg-app"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+ntg-core = {path = "../ntg-core"}
+sftp = {path = "../sftp"}
+io = {path = "../io"}
+db = {path ="../db"}
