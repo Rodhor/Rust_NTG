@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTG API Tester</title>
+    <script src="https://unpkg.com/htmx.org@2"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        button { padding: 0.5rem 1rem; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+        .section { margin: 1.5rem 0; border: 1px solid #ddd; padding: 1rem; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <h1>NTG API Tester</h1>
+
+    <div class="section">
+        <h3>DB</h3>
+        <button hx-get="/api/v1/db/ping" hx-target="#db-result">Ping DB</button>
+        <pre id="db-result">...</pre>
+    </div>
+
+    <div class="section">
+        <h3>SFTP</h3>
+        <button hx-get="/api/v1/sftp/list" hx-target="#sftp-result">List SFTP dirs</button>
+        <pre id="sftp-result">...</pre>
+    </div>
+
+</body>
+</html>

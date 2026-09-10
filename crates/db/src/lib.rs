@@ -12,3 +12,7 @@ mod tests {
         assert_eq!(result, 4);
     }
 }
+
+pub fn some_function() -> String {
+    "db connected".into()
+}
