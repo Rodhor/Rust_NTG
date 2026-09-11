@@ -1,5 +1,5 @@
-use axum::{Json, Router};
 use axum::routing::{get, post};
+use axum::{Json, Router};
 
 pub fn router() -> Router {
     Router::new()
@@ -9,27 +9,31 @@ pub fn router() -> Router {
 }
 
 fn sftp_routes() -> Router {
-    Router::new()
-        .nest("/api/v1/sftp", Router::new()
+    Router::new().nest(
+        "/api/v1/sftp",
+        Router::new()
             .route("/list", get(list_sftps))
             .route("/upload", post(upload_file))
-        )
+            .route("/download", post(download_file)),
+    )
 }
 
 fn db_routes() -> Router {
-    Router::new()
-        .nest("/api/v1/db", Router::new()
+    Router::new().nest(
+        "/api/v1/db",
+        Router::new()
             .route("/ping", get(ping_db))
-            .route("/query", post(run_query))
-        )
+            .route("/query", post(run_query)),
+    )
 }
 
 fn io_routes() -> Router {
-    Router::new()
-        .nest("/api/v1/io", Router::new()
+    Router::new().nest(
+        "/api/v1/io",
+        Router::new()
             .route("/read", post(read_file))
-            .route("/write", post(write_file))
-        )
+            .route("/write", post(write_file)),
+    )
 }
 
 async fn list_sftps() -> Json<Vec<String>> {
@@ -54,4 +58,7 @@ async fn read_file() -> Json<String> {
 
 async fn write_file() -> Json<String> {
     Json("write endpoint ready".into())
+}
+async fn download_file() -> Json<String> {
+    Json("download endpoint ready".into())
 }
