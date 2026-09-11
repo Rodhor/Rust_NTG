@@ -12,7 +12,9 @@ fn sftp_routes() -> Router {
     Router::new().nest(
         "/api/v1/sftp",
         Router::new()
-            .route("/list", get(list_sftps))
+            .route("/connect", get(connect_sftp))
+            .route("/disconnect", get(disconnect_sftp))
+            .route("/list", get(connect_sftp))
             .route("/upload", post(upload_file))
             .route("/download", post(download_file)),
     )
@@ -36,10 +38,12 @@ fn io_routes() -> Router {
     )
 }
 
-async fn list_sftps() -> Json<Vec<String>> {
-    Json(sftp::some_function())
+async fn connect_sftp() -> Json<String> {
+    Json("connecting to sftp".into())
 }
-
+async fn disconnect_sftp() -> Json<String> {
+    Json("disconnecting from sftp".into())
+}
 async fn upload_file() -> Json<String> {
     Json("upload endpoint ready".into())
 }
