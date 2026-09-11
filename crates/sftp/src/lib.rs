@@ -1,18 +1,30 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use crate::types::SftpConfiguration;
+use ssh2::Session;
+use std::net::TcpStream;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod types;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+pub async fn connect(config: SftpConfiguration) -> Result<Session, String> {
+    let tcp = TcpStream::connect(format!("{}:{}", config.host, config.port))
+        .map_err(|e| format!("Failed to connect: {}", e))?;
+    let mut session = Session::new().map_err(|e| format!("Failed to initialize session: {}", e))?;
+    session.set_tcp_stream(tcp);
+    session
+        .handshake()
+        .map_err(|e| format!("Failed to handshake: {}", e))?;
+
+    session
+        .userauth_password(&config.username, &config.password)
+        .map_err(|e| format!("Failed to authenticate: {}", e))?;
+
+    if !session.authenticated() {
+        return Err("Authentication failed".to_string());
     }
+
+    Ok(session)
 }
 
-pub fn some_function() -> Vec<String> {
-    vec!["/remote/inbox".into(), "/remote/outbox".into()]
+pub async fn disconnect(session: Session) -> Result<(), String> {
+    let _ = session.disconnect(None, "User disconnected", None);
+    Ok(())
 }

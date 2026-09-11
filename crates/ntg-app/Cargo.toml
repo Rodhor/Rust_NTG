@@ -4,12 +4,10 @@ edition.workspace = true
 version.workspace = true
 
 [dependencies]
-ntg-core = {path = "../ntg-core"}
-sftp = {path = "../sftp"}
-io = {path = "../io"}
-db = {path ="../db"}
+ntg-core = { path = "../ntg-core" }
+sftp = { path = "../sftp" }
+io = { path = "../io" }
+db = { path = "../db" }
 axum = "0.8"
-tokio = {version = "1", features = ["full"]}
-tower-http = {version = "0.7", features = ["fs"]}
-serde = {version = "1", features = ["derive"]}
-serde_json = "1"
+tower-http = { version = "0.7", features = ["fs"] }
+tokio.workspace = true
