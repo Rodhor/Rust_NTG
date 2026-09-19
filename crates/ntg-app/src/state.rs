@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use db::SqlitePool;
+use std::sync::Arc;
 
 #[derive(Clone, Default)]
 pub struct AppState {
