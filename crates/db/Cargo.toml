@@ -4,3 +4,5 @@ edition.workspace = true
 version.workspace = true
 
 [dependencies]
+sqlx = {version = "0.9.0", features = ["runtime-tokio", "macros", "migrate", "sqlite", "chrono"]}
+dirs = "7.0.0"
