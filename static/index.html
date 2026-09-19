@@ -88,6 +88,31 @@
         .form-grid input {
             padding: 0.4rem;
         }
+
+        #toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: #c62828;
+            color: #fff;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            max-width: 320px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast-hide {
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -154,7 +179,34 @@
 
 </div>
 
+<div id="toast-container" aria-live="polite"></div>
+
 <script>
+    function showErrorToast(body) {
+        var message = 'Request failed';
+        try {
+            var data = JSON.parse(body);
+            if (typeof data.error === 'string') message = data.error;
+        } catch (e) {}
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(function () { toast.classList.add('toast-hide'); }, 3500);
+        setTimeout(function () { toast.remove(); }, 3900);
+    }
+
+    document.body.addEventListener('htmx:beforeSwap', function (evt) {
+        if (evt.detail.xhr.status >= 400) {
+            evt.detail.shouldSwap = true;
+            showErrorToast(evt.detail.xhr.responseText);
+        }
+    });
+
+    document.body.addEventListener('htmx:sendError', function () {
+        showErrorToast('Could not reach the server');
+    });
+
     document.body.addEventListener('htmx:afterSwap', function (evt) {
         var el = evt.detail.target;
         el.classList.remove('ok', 'err');
