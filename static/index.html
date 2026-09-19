@@ -6,26 +6,70 @@
     <title>NTG API Tester</title>
     <script src="https://unpkg.com/htmx.org@2"></script>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        button { padding: 0.5rem 1rem; cursor: pointer; }
-        pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
-        .section { margin: 1.5rem 0; border: 1px solid #ddd; padding: 1rem; border-radius: 6px; }
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .section {
+            margin: 1.5rem 0;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
-    <h1>NTG API Tester</h1>
+<h1>NTG API Tester</h1>
 
-    <div class="section">
-        <h3>DB</h3>
-        <button hx-get="/api/v1/db/ping" hx-target="#db-result">Ping DB</button>
-        <pre id="db-result">...</pre>
-    </div>
+<div class="section">
+    <h3>DB</h3>
+    <button hx-get="/api/v1/db/ping" hx-target="#db-result">Ping DB</button>
+    <pre id="db-result">...</pre>
+</div>
 
-    <div class="section">
-        <h3>SFTP</h3>
-        <button hx-get="/api/v1/sftp/list" hx-target="#sftp-result">List SFTP dirs</button>
-        <pre id="sftp-result">...</pre>
-    </div>
+<div class="section">
+    <h3>SFTP</h3>
+    <button hx-get="/api/v1/sftp/list" hx-target="#sftp-result">List SFTP dirs</button>
+    <pre id="sftp-result">...</pre>
+
+    <form>
+        <label>Host
+            <input type="text" name="host">
+        </label>
+        <label>Port
+            <input type="number" name="port">
+        </label>
+        <label>username
+            <input type="text" name="username">
+        </label>
+        <label>password
+            <input type="password" name="password">
+        </label>
+
+        <button type="submit" hx-post="/api/v1/sftp/connect" hx-target="#sftp-connection-result">connect</button>
+    </form>
+
+    <pre id="sftp-connection-result">...</pre>
+
+    <button hx-get="/api/v1/sftp/disconnect" hx-target="#sftp-disconnect-result">Disconnect</button>
+    <pre id="sftp-disconnect-result">...</pre>
+
+
+</div>
 
 </body>
 </html>
