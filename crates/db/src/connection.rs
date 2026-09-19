@@ -1,8 +1,8 @@
-use std::str::FromStr;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use std::str::FromStr;
 
-pub async fn init_db_connection() ->Result<SqlitePool, String> {
+pub async fn init_db_connection() -> Result<SqlitePool, String> {
     let base_dir = dirs::executable_dir().ok_or("Failed to determine executable directory")?;
     let db_path = base_dir.join("app.db");
     let options = SqliteConnectOptions::from_str(&format!("sqlite://{}", db_path.display()))
@@ -16,7 +16,10 @@ pub async fn init_db_connection() ->Result<SqlitePool, String> {
         .await
         .map_err(|e| format!("Failed to create db pool: {}", e))?;
 
-    sqlx::migrate!("../../migrations").run(&pool).await.map_err(|e| format!("Failed to run migrations: {}", e))?;
+    sqlx::migrate!("../../migrations")
+        .run(&pool)
+        .await
+        .map_err(|e| format!("Failed to run migrations: {}", e))?;
 
     Ok(pool)
 }
@@ -29,7 +32,4 @@ pub async fn disconnect_db(pool: &SqlitePool) -> Result<(), String> {
     } else {
         Err("Failed to disconnect db".into())
     }
-
-
-
 }
