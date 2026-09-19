@@ -11,6 +11,7 @@
             max-width: 800px;
             margin: 2rem auto;
             padding: 0 1rem;
+            color: #222;
         }
 
         button {
@@ -22,6 +23,10 @@
             background: #f4f4f4;
             padding: 1rem;
             overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 0.5rem 0 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
 
         .section {
@@ -30,6 +35,59 @@
             padding: 1rem;
             border-radius: 6px;
         }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 0.5rem 0;
+        }
+
+        pre.ok {
+            border-left: 4px solid #2e7d32;
+            background: #e8f5e9;
+        }
+
+        pre.err {
+            border-left: 4px solid #c62828;
+            background: #fdecea;
+        }
+
+        .htmx-indicator {
+            opacity: 0;
+            color: #888;
+            font-style: italic;
+        }
+
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+
+        form.connection-form {
+            border: 1px dashed #ccc;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .form-grid input {
+            padding: 0.4rem;
+        }
     </style>
 </head>
 <body>
@@ -37,39 +95,77 @@
 
 <div class="section">
     <h3>DB</h3>
-    <button hx-get="/api/v1/db/ping" hx-target="#db-result">Ping DB</button>
+    <div class="actions">
+        <button hx-get="/api/v1/db/ping" hx-target="#db-result" hx-disabled-elt="this">
+            Ping DB <span class="htmx-indicator">(working...)</span>
+        </button>
+    </div>
     <pre id="db-result">...</pre>
 </div>
 
 <div class="section">
     <h3>SFTP</h3>
-    <button hx-get="/api/v1/sftp/list" hx-target="#sftp-result">List SFTP dirs</button>
-    <pre id="sftp-result">...</pre>
 
-    <form>
-        <label>Host
-            <input type="text" name="host">
-        </label>
-        <label>Port
-            <input type="number" name="port">
-        </label>
-        <label>username
-            <input type="text" name="username">
-        </label>
-        <label>password
-            <input type="password" name="password">
-        </label>
-
-        <button type="submit" hx-post="/api/v1/sftp/connect" hx-target="#sftp-connection-result">connect</button>
+    <form class="connection-form"
+          hx-post="/api/v1/sftp/connect"
+          hx-target="#sftp-connection-result"
+          hx-disabled-elt="find button">
+        <div class="form-grid">
+            <label>Host
+                <input type="text" name="host" placeholder="127.0.0.1" required>
+            </label>
+            <label>Port
+                <input type="number" name="port" value="22" min="1" max="65535" required>
+            </label>
+            <label>Username
+                <input type="text" name="username" autocomplete="username" required>
+            </label>
+            <label>Password
+                <input type="password" name="password" autocomplete="new-password" required>
+            </label>
+        </div>
+        <button type="submit">
+            Connect <span class="htmx-indicator">(connecting...)</span>
+        </button>
     </form>
-
     <pre id="sftp-connection-result">...</pre>
 
-    <button hx-get="/api/v1/sftp/disconnect" hx-target="#sftp-disconnect-result">Disconnect</button>
+    <div class="actions">
+        <button hx-get="/api/v1/sftp/disconnect" hx-target="#sftp-disconnect-result" hx-disabled-elt="this">
+            Disconnect <span class="htmx-indicator">(working...)</span>
+        </button>
+    </div>
     <pre id="sftp-disconnect-result">...</pre>
 
+    <div class="actions">
+        <button hx-get="/api/v1/sftp/list" hx-target="#sftp-result" hx-disabled-elt="this">
+            List SFTP dirs <span class="htmx-indicator">(working...)</span>
+        </button>
+        <button hx-post="/api/v1/sftp/upload" hx-target="#sftp-upload-result" hx-disabled-elt="this">
+            Upload <span class="htmx-indicator">(working...)</span>
+        </button>
+        <button hx-post="/api/v1/sftp/download" hx-target="#sftp-download-result" hx-disabled-elt="this">
+            Download <span class="htmx-indicator">(working...)</span>
+        </button>
+    </div>
+    <pre id="sftp-result">...</pre>
+    <pre id="sftp-upload-result">...</pre>
+    <pre id="sftp-download-result">...</pre>
 
 </div>
+
+<script>
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        var el = evt.detail.target;
+        el.classList.remove('ok', 'err');
+        try {
+            var data = JSON.parse(el.innerText);
+            if (typeof data.success === 'boolean') {
+                el.classList.add(data.success ? 'ok' : 'err');
+            }
+        } catch (e) {}
+    });
+</script>
 
 </body>
 </html>
