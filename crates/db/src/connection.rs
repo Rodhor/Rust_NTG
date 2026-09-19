@@ -20,3 +20,16 @@ pub async fn init_db_connection() ->Result<SqlitePool, String> {
 
     Ok(pool)
 }
+
+pub async fn disconnect_db(pool: &SqlitePool) -> Result<(), String> {
+    pool.close().await;
+
+    if pool.is_closed() {
+        Ok(())
+    } else {
+        Err("Failed to disconnect db".into())
+    }
+
+
+
+}
