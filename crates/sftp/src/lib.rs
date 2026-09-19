@@ -1,5 +1,7 @@
-mod connection;
-mod directory_operations;
-mod file_operations;
+pub mod connection;
+pub mod directory_operations;
+pub mod file_operations;
 mod helpers;
-mod types;
+pub mod types;
+
+pub use ssh2::Session;
