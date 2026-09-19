@@ -11,3 +11,4 @@ db = { path = "../db" }
 axum = "0.8"
 tower-http = { version = "0.7", features = ["fs"] }
 tokio.workspace = true
+serde = { version = "1.0.229", features = ["derive"] }

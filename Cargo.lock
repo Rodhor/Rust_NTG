@@ -346,6 +346,7 @@ dependencies = [
  "db",
  "io",
  "ntg-core",
+ "serde",
  "sftp",
  "tokio",
  "tower-http",
