@@ -28,7 +28,6 @@ fn db_routes() -> Router<AppState> {
     Router::new().nest(
         "/api/v1/db",
         Router::new()
-            .route("/ping", get(ping_db))
             .route("/query", post(run_query)),
     )
 }
@@ -68,10 +67,6 @@ async fn disconnect_sftp(State(state): State<AppState>) -> ApiResponse<String> {
 }
 async fn upload_file() -> ApiResponse<String> {
     ApiResponse::ok("upload endpoint ready".into())
-}
-
-async fn ping_db() -> ApiResponse<String> {
-    ApiResponse::ok(db::some_function())
 }
 
 async fn run_query() -> ApiResponse<String> {
