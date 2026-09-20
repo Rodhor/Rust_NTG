@@ -1,5 +1,5 @@
 pub mod connection;
-mod models;
-mod queries;
+pub mod models;
+pub mod queries;
 
 pub use sqlx::SqlitePool;
