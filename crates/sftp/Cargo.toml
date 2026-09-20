@@ -8,3 +8,4 @@ ntg-core = { path = "../ntg-core" }
 serde.workspace = true
 serde_json.workspace = true
 ssh2 = "0.9.6"
+tokio.workspace = true
