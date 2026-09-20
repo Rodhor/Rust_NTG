@@ -1,1 +1,1 @@
-mod sftp_configuration;
+pub mod sftp_configuration;
