@@ -3,7 +3,7 @@ use crate::state::AppState;
 use axum::extract::State;
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use sftp::types::SftpConfiguration;
+use ntg_core::models::sftp_configuration::SftpConfiguration;
 
 pub fn sftp_routes() -> Router<AppState> {
     Router::new().nest(
