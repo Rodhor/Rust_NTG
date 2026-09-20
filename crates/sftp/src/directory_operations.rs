@@ -3,8 +3,8 @@ use crate::types::FileItem;
 use ssh2::Session;
 use std::path::Path;
 
-pub fn list_dir(connection: Session, path: String) -> Result<Vec<FileItem>, String> {
-    let sftp = sftp(&connection)?;
+pub fn list_dir(connection: &Session, path: String) -> Result<Vec<FileItem>, String> {
+    let sftp = sftp(connection)?;
 
     let mut files = Vec::new();
     let dir_path = Path::new(&path);
@@ -50,8 +50,8 @@ pub fn list_dir(connection: Session, path: String) -> Result<Vec<FileItem>, Stri
     Ok(files)
 }
 
-pub fn create_remote_dir(connection: Session, path: String) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+pub fn create_remote_dir(connection: &Session, path: String) -> Result<(), String> {
+    let sftp = sftp(connection)?;
 
     sftp.mkdir(Path::new(&path), 0o1777)
         .map_err(|err| format!("Failed to create directory: {}", err))?;
@@ -59,8 +59,8 @@ pub fn create_remote_dir(connection: Session, path: String) -> Result<(), String
     Ok(())
 }
 
-pub fn delete_remote_dir(connection: Session, path: String) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+pub fn delete_remote_dir(connection: &Session, path: String) -> Result<(), String> {
+    let sftp = sftp(connection)?;
     sftp.rmdir(Path::new(&path))
         .map_err(|err| format!("Failed to remove directory: {}", err))?;
 

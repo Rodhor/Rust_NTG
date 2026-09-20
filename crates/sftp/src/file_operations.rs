@@ -4,11 +4,11 @@ use std::io::copy;
 use std::path::Path;
 
 pub fn upload_file(
-    connection: Session,
+    connection: &Session,
     local_path: String,
     remote_path: String,
 ) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+    let sftp = sftp(connection)?;
 
     let mut local_file = std::fs::File::open(&local_path)
         .map_err(|err| format!("Failed to open local file: {}", err))?;
@@ -24,11 +24,11 @@ pub fn upload_file(
 }
 
 pub fn download_file(
-    connection: Session,
+    connection: &Session,
     local_path: String,
     remote_path: String,
 ) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+    let sftp = sftp(connection)?;
 
     let mut remote_file = sftp
         .open(&remote_path)
@@ -43,8 +43,8 @@ pub fn download_file(
     Ok(())
 }
 
-pub fn delete_remote_file(connection: Session, remote_path: String) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+pub fn delete_remote_file(connection: &Session, remote_path: String) -> Result<(), String> {
+    let sftp = sftp(connection)?;
 
     sftp.unlink(Path::new(&remote_path))
         .map_err(|err| format!("Failed to delete remote file: {}", err))?;
@@ -53,11 +53,11 @@ pub fn delete_remote_file(connection: Session, remote_path: String) -> Result<()
 }
 
 pub fn move_file_remote(
-    connection: Session,
+    connection: &Session,
     remote_source_path: String,
     remote_destination_path: String,
 ) -> Result<(), String> {
-    let sftp = sftp(&connection)?;
+    let sftp = sftp(connection)?;
     sftp.rename(
         Path::new(&remote_source_path),
         Path::new(&remote_destination_path),
