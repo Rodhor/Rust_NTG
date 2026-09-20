@@ -272,6 +272,7 @@ name = "db"
 version = "0.1.0"
 dependencies = [
  "dirs",
+ "ntg-core",
  "sqlx",
 ]
 
@@ -953,6 +954,9 @@ dependencies = [
 [[package]]
 name = "ntg-core"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "num-traits"
@@ -1191,6 +1195,7 @@ dependencies = [
 name = "sftp"
 version = "0.1.0"
 dependencies = [
+ "ntg-core",
  "serde",
  "serde_json",
  "ssh2",
