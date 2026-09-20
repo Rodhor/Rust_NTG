@@ -10,7 +10,7 @@ pub fn sftp_routes() -> Router<AppState> {
         "/api/v1/sftp",
         Router::new()
             .route("/connect", post(connect_sftp))
-            .route("/disconnect", get(disconnect_sftp))
+            .route("/disconnect", post(disconnect_sftp))
             .route("/list", get(connect_sftp))
             .route("/upload", post(upload_file))
             .route("/download", post(download_file)),
