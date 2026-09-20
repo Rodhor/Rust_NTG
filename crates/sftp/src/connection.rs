@@ -2,7 +2,19 @@ use ntg_core::models::sftp_configuration::SftpConfiguration;
 use ssh2::Session;
 use std::net::TcpStream;
 
-pub async fn connect(config: SftpConfiguration) -> Result<Session, String> {
+pub async fn connect_blocking(config: SftpConfiguration) -> Result<Session, String> {
+    tokio::task::spawn_blocking(move || connect(config))
+        .await
+        .map_err(|err| format!("Connection task panicked: {}", err))?
+}
+
+pub async fn disconnect_blocking(session: Session) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || disconnect(session))
+        .await
+        .map_err(|err| format!("Disconnect task panicked: {}", err))?
+}
+
+fn connect(config: SftpConfiguration) -> Result<Session, String> {
     let tcp = TcpStream::connect(format!("{}:{}", config.host, config.port))
         .map_err(|e| format!("Failed to connect: {}", e))?;
     let mut session = Session::new().map_err(|e| format!("Failed to initialize session: {}", e))?;
@@ -22,7 +34,7 @@ pub async fn connect(config: SftpConfiguration) -> Result<Session, String> {
     Ok(session)
 }
 
-pub async fn disconnect(session: Session) -> Result<(), String> {
+fn disconnect(session: Session) -> Result<(), String> {
     let _ = session.disconnect(None, "User disconnected", None);
     Ok(())
 }

@@ -20,7 +20,7 @@ async fn connect_sftp(
     State(state): State<AppState>,
     Form(config): Form<SftpConfiguration>,
 ) -> ApiResponse<String> {
-    match sftp::connection::connect(config).await {
+    match sftp::connection::connect_blocking(config).await {
         Ok(session) => {
             let mut guard = state.session.lock().await;
             *guard = Some(session);
@@ -32,7 +32,7 @@ async fn connect_sftp(
 async fn disconnect_sftp(State(state): State<AppState>) -> ApiResponse<String> {
     let session = state.session.lock().await.take();
     if let Some(session) = session {
-        match sftp::connection::disconnect(session).await {
+        match sftp::connection::disconnect_blocking(session).await {
             Ok(_) => ApiResponse::ok("Disconnected successfully".into()),
             Err(err) => ApiResponse::err(format!("Disconnect failed: {}", err)),
         }
