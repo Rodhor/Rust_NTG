@@ -1,4 +1,4 @@
-use crate::types::SftpConfiguration;
+use ntg_core::models::sftp_configuration::SftpConfiguration;
 use ssh2::Session;
 use std::net::TcpStream;
 
