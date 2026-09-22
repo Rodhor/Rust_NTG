@@ -1,5 +1,6 @@
 mod config;
 mod csv;
+mod domain;
 mod error;
 mod extract;
 mod middleware;
