@@ -4,26 +4,37 @@
 
 A Rust web application (v0.1.0) built with Axum that provides a REST API for managing SFTP connections, database queries, and file I/O — with a minimal HTMX frontend for testing.
 
-### Architecture (Workspace with 4 crates)
+## Current State
 
-- **ntg-app**: Main Axum web server, routes, API handlers
-- **db**: Database connectivity
+Single crate (`rust-ntg`, edition 2024, axum 0.8). Early-stage scaffold:
+`src/main.rs` is a stub `fn main() {}`; modules are declared but largely empty (e.g. `router.rs`, `state.rs`).
+
+- **config**: configuration loading (`.env` via `dotenv` + `envy`)
+- **domain**: domain models (e.g. `config_model`)
+- **extract / error / middleware / shutdown / state**: Axum plumbing scaffolding
+- **router**: routes/API handlers (not yet built)
 - **sftp**: SFTP file transfer
-- **io**: File read/write operations
+- **csv**: CSV handling
 
 ## Development Approach
 
-- **User drives all development** — I will not make code changes unless explicitly asked
-- I provide guidance, research, and answers to questions
-- I will look up documentation before answering, using latest versions
-- I do not guess — I research first
+This project is **a learning exercise** — the user wants to understand the concepts, decisions, and reasoning behind the code, not just receive implementations. Assume the user may not know the tools involved; explain unfamiliar concepts rather than assuming prior knowledge.
 
-## When Providing Guidance
+- **The user drives all development.** Make no code changes unless explicitly asked.
+- **Explain the "why"** behind every design/code decision: reasoning, trade-offs, alternatives considered.
+- **Make sure concepts are understood, not just copied** — even the code you write.
+- **Research before answering.** Use the latest documentation and current best practices; never guess.
 
-- Always use the latest documentation
-- Search for current best practices
-- Reference official docs (Rust, Axum, etc.) when explaining
-- Be precise and actionable in recommendations
-- Use examples to explain concepts — examples should be close but not necessarily the exact code needed
-- Keep explanations simple and easy to understand
-- Don't make things overly complicated just because it's possible
+## Avoiding Feature Creep
+
+- Question requests that aren't strictly needed now: is it needed, or can it wait?
+- If a feature is deferred, record it in `Docs/` (with a summary in `Docs/overview.md`) for later evaluation — do not build it now.
+- `Docs/` holds forward-looking notes only; do not treat them as current requirements.
+
+## Communication Style
+
+- Short, concise, and easy to understand. The user will ask questions if something is unclear.
+- Precise and actionable in recommendations.
+- Always reference official, up-to-date documentation (Rust, Axum, etc.).
+- Use examples to explain concepts — close to, but not necessarily exactly, the needed code.
+- Keep things simple; don't overcomplicate what can stay simple.

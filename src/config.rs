@@ -1,1 +1,1 @@
-use crate::domain::config;
+use crate::domain::config_model;
