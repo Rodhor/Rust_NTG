@@ -24,6 +24,7 @@ This project is **a learning exercise** — the user wants to understand the con
 - **Explain the "why"** behind every design/code decision: reasoning, trade-offs, alternatives considered.
 - **Make sure concepts are understood, not just copied** — even the code you write.
 - **Research before answering.** Use the latest documentation and current best practices; never guess.
+- **Always use skills when they fit.** Before and during work, check the available skills and load any whose description matches the task (e.g. `rust-skills` for Rust coding/review, `api-and-interface-design` for endpoint design, `code-review-and-quality` before merging). Do not skip a matching skill.
 
 ## Avoiding Feature Creep
 
