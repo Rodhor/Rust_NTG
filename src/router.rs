@@ -11,6 +11,7 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
 }
 
+#[tracing::instrument(skip_all)]
 async fn health(State(state): State<AppState>) -> Result<ApiResponse<Health>, AppError> {
     Ok(ApiResponse {
         data: Health {

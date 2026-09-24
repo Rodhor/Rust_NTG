@@ -24,6 +24,15 @@ pub enum AppError {
 
     #[error("internal server error")]
     Internal,
+
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("failed to initialize logging: {0}")]
+    Logging(#[from] tracing_subscriber::util::TryInitError),
+
+    #[error("dotenv: {0}")]
+    Dotenv(#[from] dotenvy::Error),
 }
 
 impl AppError {
@@ -32,6 +41,9 @@ impl AppError {
             AppError::Config(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Sftp(_) => StatusCode::BAD_GATEWAY,
             AppError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Logging(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Dotenv(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -40,6 +52,9 @@ impl AppError {
             AppError::Config(_) => "CONFIG_ERROR",
             AppError::Sftp(_) => "SFTP_ERROR",
             AppError::Internal => "INTERNAL_ERROR",
+            AppError::Io(_) => "IO_ERROR",
+            AppError::Logging(_) => "LOG_INIT_ERROR",
+            AppError::Dotenv(_) => "DOTENV_ERROR",
         }
     }
 }
