@@ -8,7 +8,7 @@
 
 | Doc | Topic | Summary |
 | --- | --- | --- |
-| [fullstack-rust.md](fullstack-rust.md) | Full Rust stack — frontend migration path | Goal: a fully Rust web app. Now: Axum + HTMX + Askama (server-rendered). Later: rewrite the frontend in **Leptos as an SPA (CSR)**; backend (Axum REST API + `db`/`sftp`/`io`) stays untouched. Chosen over isomorphic Leptos and over Dioxus / Topcoat. REST API is the contract that makes the rewrite frontend-only. |
+| [fullstack-rust.md](fullstack-rust.md) | Full Rust stack — frontend path (deferred) | Goal: a fully Rust web app. Now (decided 2026-09-24): **API-only**, no frontend — pure Axum JSON REST API, tested via Bruno. Later: add a frontend that consumes the API, most likely **Leptos as an SPA (CSR)**; backend stays untouched. Chosen over isomorphic Leptos, HTMX, Dioxus, and Topcoat. The REST API is the contract that makes a later frontend purely additive. |
 
 ## Status Legend
 

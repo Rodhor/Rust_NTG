@@ -2,7 +2,7 @@
 
 ## Project: Rust_NTG
 
-A Rust web application (v0.1.0) built with Axum that provides a REST API for managing SFTP connections, database queries, and file I/O — with a minimal HTMX frontend for testing.
+A Rust web application (v0.1.0) built with Axum that provides a REST API for managing SFTP connections, database queries, and file I/O — no frontend; tested directly via Bruno.
 
 ## Current State
 
