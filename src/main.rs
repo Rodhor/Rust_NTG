@@ -9,4 +9,9 @@ mod sftp;
 mod shutdown;
 mod state;
 
-fn main() {}
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv()?;
+    let config = config::load_config()?;
+
+    Ok(())
+}
