@@ -295,6 +295,7 @@ dependencies = [
  "envy",
  "serde",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

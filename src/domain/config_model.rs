@@ -17,6 +17,7 @@ trait FromEnv: DeserializeOwned {
 impl Config {
     pub fn load() -> Result<Self, ConfigError> {
         Ok(Self {
+            app: AppConfig::from_env()?,
             log: LogConfig::from_env()?,
             sftp: SftpConfig::from_env()?,
             database: DatabaseConfig::from_env()?,
@@ -26,9 +27,29 @@ impl Config {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+    pub app: AppConfig,
     pub log: LogConfig,
     pub sftp: SftpConfig,
     pub database: DatabaseConfig,
+}
+
+// =========== APP CONFIG ===============
+impl FromEnv for AppConfig {
+    fn prefix() -> &'static str {
+        "APP_"
+    }
+}
+
+fn default_bind_addr() -> String {
+    "127.0.0.1:8080".to_string()
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AppConfig {
+    pub name: String,
+    #[serde(default = "default_bind_addr")]
+    pub bind_addr: String,
+    pub url: Option<String>,
 }
 
 // =========== LOG CONFIG ===============
