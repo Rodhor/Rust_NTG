@@ -21,7 +21,7 @@ Single crate (`rust-ntg`, edition 2024, axum 0.8). Bootstrapped server skeleton:
 
 This project is **a learning exercise** — the user wants to understand the concepts, decisions, and reasoning behind the code, not just receive implementations. Assume the user may not know the tools involved; explain unfamiliar concepts rather than assuming prior knowledge.
 
-- **The user drives all development.** Make no code changes unless explicitly asked.
+- **The user writes all code.** The assistant's job is to explain, plan, review, and answer questions — not to edit source files. The user implements every change themselves unless they explicitly ask the assistant to write a specific piece of code.
 - **Explain the "why"** behind every design/code decision: reasoning, trade-offs, alternatives considered.
 - **Make sure concepts are understood, not just copied** — even the code you write.
 - **Research before answering.** Use the latest documentation and current best practices; never guess.

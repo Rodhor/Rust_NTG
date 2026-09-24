@@ -1,13 +1,15 @@
-use axum::{Router, extract::State, routing::get};
+use axum::{Router, extract::State, middleware, routing::get};
 
 use crate::{
     domain::{error::AppError, health::Health, response::ApiResponse},
+    middleware::log_requests,
     state::AppState,
 };
 
 pub fn build_router(state: AppState) -> Router {
     Router::<AppState>::new()
         .route("/api/v1/health", get(health))
+        .layer(middleware::from_fn(log_requests))
         .with_state(state)
 }
 
