@@ -1,8 +1,9 @@
-use ssh2::ErrorCode::Session;
-
 use crate::domain::error::AppError;
+use crate::sftp::pool::SessionPool;
 use crate::state::AppState;
+use std::sync::Arc;
 
+mod api;
 mod config;
 mod csv;
 mod domain;
@@ -13,8 +14,6 @@ mod router;
 mod sftp;
 mod shutdown;
 mod state;
-use crate::sftp::pool::SessionPool;
-use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
