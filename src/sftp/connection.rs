@@ -26,9 +26,9 @@ fn connect(config: SftpConfig) -> Result<Session, AppError> {
     let mut session = Session::new()?;
     session.set_blocking(true);
     session.set_timeout(timeout.as_millis() as u32);
-    session.set_keepalive(false, 60);
     session.set_tcp_stream(tcp);
     session.handshake()?;
+    session.set_keepalive(false, 60);
 
     verify_host_key(&session, &config.host_key_sha256)?;
 
