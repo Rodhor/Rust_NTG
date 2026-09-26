@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Serialize;
 
@@ -33,6 +35,18 @@ pub enum AppError {
 
     #[error("dotenv: {0}")]
     Dotenv(#[from] dotenvy::Error),
+
+    #[error("ssh2: {0}")]
+    Ssh2(#[from] ssh2::Error),
+
+    #[error("failed to spawn blocking task: {0}")]
+    SpawnBlocking(#[from] tokio::task::JoinError),
+
+    #[error("host key mismatch: expected {expected}, got {actual}")]
+    HostKeyMismatch { expected: String, actual: String },
+
+    #[error("path {path:?} escapes root {root:?}")]
+    PathEscapesRoot { path: String, root: String },
 }
 
 impl AppError {
@@ -44,6 +58,10 @@ impl AppError {
             AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Logging(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Dotenv(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Ssh2(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::SpawnBlocking(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::HostKeyMismatch { .. } => StatusCode::BAD_GATEWAY,
+            AppError::PathEscapesRoot { .. } => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -55,6 +73,10 @@ impl AppError {
             AppError::Io(_) => "IO_ERROR",
             AppError::Logging(_) => "LOG_INIT_ERROR",
             AppError::Dotenv(_) => "DOTENV_ERROR",
+            AppError::Ssh2(_) => "SSH2_ERROR",
+            AppError::SpawnBlocking(_) => "SPAWN_BLOCKING_ERROR",
+            AppError::HostKeyMismatch { .. } => "HOST_KEY_MISMATCH",
+            AppError::PathEscapesRoot { .. } => "PATH_ESCAPES_ROOT",
         }
     }
 }
