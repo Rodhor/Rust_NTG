@@ -16,12 +16,42 @@ trait FromEnv: DeserializeOwned {
 // =========== CONFIG ===============
 impl Config {
     pub fn load() -> Result<Self, ConfigError> {
-        Ok(Self {
+        let config = Self {
             app: AppConfig::from_env()?,
             log: LogConfig::from_env()?,
             sftp: SftpConfig::from_env()?,
             database: DatabaseConfig::from_env()?,
-        })
+        };
+        config.validate()?;
+        Ok(config)
+    }
+
+    fn validate(&self) -> Result<(), ConfigError> {
+        let s = &self.sftp;
+        let bad = |m: &str| Err(ConfigError::Invalid(m.to_string()));
+
+        if s.host.trim().is_empty() {
+            return bad("SFTP_HOST must not be empty");
+        }
+        if s.username.trim().is_empty() {
+            return bad("SFTP_USERNAME must not be empty");
+        }
+        if s.password.is_none() {
+            return bad("SFTP_PASSWORD is required (only password auth is implemented)");
+        }
+        // 64 hex chars = 32 bytes = SHA256
+        if s.host_key_sha256.len() != 64
+            || !s.host_key_sha256.chars().all(|c| c.is_ascii_hexdigit())
+        {
+            return bad("SFTP_HOST_KEY_SHA256 must be 64 hex characters (sha256)");
+        }
+        if s.pool_size == 0 {
+            return bad("SFTP_POOL_SIZE must be greater than 0");
+        }
+        if s.connect_timeout_secs == Some(0) {
+            return bad("SFTP_CONNECT_TIMEOUT_SECS must be greater than 0");
+        }
+        Ok(())
     }
 }
 
@@ -125,17 +155,47 @@ impl FromEnv for SftpConfig {
     }
 }
 
+impl std::fmt::Debug for SftpConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SftpConfig")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("password", &"<redacted>")
+            .field("host_key_sha256", &self.host_key_sha256)
+            .field("connect_timeout_secs", &self.connect_timeout_secs)
+            .field("pool_size", &self.pool_size)
+            .field("default_in_directory", &self.default_in_directory)
+            .field("default_out_directory", &self.default_out_directory)
+            .field("default_archive_directory", &self.default_archive_directory)
+            .finish()
+    }
+}
+
 fn default_sftp_port() -> Option<u16> {
     Some(22)
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
+fn default_connect_timeout_secs() -> Option<u64> {
+    Some(10)
+}
+
+fn default_pool_size() -> usize {
+    2
+}
+
+#[derive(Clone, Deserialize, Default)]
 pub struct SftpConfig {
     pub host: String,
     #[serde(default = "default_sftp_port")]
     pub port: Option<u16>,
     pub username: String,
     pub password: Option<String>,
+    pub host_key_sha256: String,
+    #[serde(default = "default_connect_timeout_secs")]
+    pub connect_timeout_secs: Option<u64>,
+    #[serde(default = "default_pool_size")]
+    pub pool_size: usize,
     #[serde(default)]
     pub default_in_directory: Option<PathBuf>,
     #[serde(default)]
@@ -148,6 +208,7 @@ pub struct SftpConfig {
 #[derive(Debug)]
 pub enum ConfigError {
     Env(envy::Error),
+    Invalid(String),
 }
 
 impl From<envy::Error> for ConfigError {
@@ -159,7 +220,8 @@ impl From<envy::Error> for ConfigError {
 impl std::fmt::Display for ConfigError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConfigError::Env(error) => write!(f, "config error: {}", error),
+            ConfigError::Env(error) => write!(f, "config error: {error}"),
+            ConfigError::Invalid(msg) => write!(f, "invalid config: {msg}"),
         }
     }
 }
@@ -168,6 +230,7 @@ impl std::error::Error for ConfigError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             ConfigError::Env(error) => Some(error),
+            ConfigError::Invalid(_) => None,
         }
     }
 }
