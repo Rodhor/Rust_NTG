@@ -1,4 +1,4 @@
-use ssh2::{Session, Sftp};
+use ssh2::Session;
 use std::sync::Arc;
 use tokio::sync::{Mutex, Semaphore};
 
