@@ -18,7 +18,7 @@ pub fn resolve_path(root: &Path, requested: &str) -> Result<PathBuf, AppError> {
     }
     if relative
         .components()
-        .any(|c| !matches!(c, Component::Normal(_)))
+        .any(|c| !matches!(c, Component::Normal(_) | Component::CurDir))
     {
         return Err(escapes());
     }
