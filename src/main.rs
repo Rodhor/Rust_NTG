@@ -1,5 +1,7 @@
-use crate::state::AppState;
+use ssh2::ErrorCode::Session;
+
 use crate::domain::error::AppError;
+use crate::state::AppState;
 
 mod config;
 mod csv;
@@ -11,6 +13,8 @@ mod router;
 mod sftp;
 mod shutdown;
 mod state;
+use crate::sftp::pool::SessionPool;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
@@ -21,6 +25,7 @@ async fn main() -> Result<(), AppError> {
 
     let app = router::build_router(AppState {
         config: config.clone(),
+        sftp: Arc::new(SessionPool::new(config.sftp.clone())),
     });
     let addr = &config.app.bind_addr;
 

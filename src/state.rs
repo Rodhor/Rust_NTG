@@ -1,6 +1,9 @@
 use crate::domain::config_model::Config;
+use crate::sftp::pool::SessionPool;
+use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct AppState {
     pub config: Config,
+    pub sftp: Arc<SessionPool>,
 }
