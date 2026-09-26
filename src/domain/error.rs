@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Serialize;
 

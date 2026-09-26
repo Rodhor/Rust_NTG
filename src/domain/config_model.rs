@@ -48,9 +48,13 @@ impl Config {
         if s.pool_size == 0 {
             return bad("SFTP_POOL_SIZE must be greater than 0");
         }
-        if s.connect_timeout_secs == Some(0) {
+        if s.connect_timeout_secs == 0 {
             return bad("SFTP_CONNECT_TIMEOUT_SECS must be greater than 0");
         }
+        if s.root_dir.to_string_lossy().is_empty() {
+            return bad("SFTP_ROOT_DIR must not be empty");
+        }
+
         Ok(())
     }
 }
@@ -165,9 +169,10 @@ impl std::fmt::Debug for SftpConfig {
             .field("host_key_sha256", &self.host_key_sha256)
             .field("connect_timeout_secs", &self.connect_timeout_secs)
             .field("pool_size", &self.pool_size)
-            .field("default_in_directory", &self.default_in_directory)
-            .field("default_out_directory", &self.default_out_directory)
-            .field("default_archive_directory", &self.default_archive_directory)
+            .field("root_dir", &self.root_dir)
+            .field("in_dir", &self.in_dir)
+            .field("out_dir", &self.out_dir)
+            .field("archive_dir", &self.archive_dir)
             .finish()
     }
 }
@@ -176,8 +181,8 @@ fn default_sftp_port() -> Option<u16> {
     Some(22)
 }
 
-fn default_connect_timeout_secs() -> Option<u64> {
-    Some(10)
+fn default_connect_timeout_secs() -> u64 {
+    10
 }
 
 fn default_pool_size() -> usize {
@@ -193,15 +198,16 @@ pub struct SftpConfig {
     pub password: Option<String>,
     pub host_key_sha256: String,
     #[serde(default = "default_connect_timeout_secs")]
-    pub connect_timeout_secs: Option<u64>,
+    pub connect_timeout_secs: u64,
     #[serde(default = "default_pool_size")]
     pub pool_size: usize,
+    pub root_dir: PathBuf,
     #[serde(default)]
-    pub default_in_directory: Option<PathBuf>,
+    pub in_dir: Option<PathBuf>,
     #[serde(default)]
-    pub default_out_directory: Option<PathBuf>,
+    pub out_dir: Option<PathBuf>,
     #[serde(default)]
-    pub default_archive_directory: Option<PathBuf>,
+    pub archive_dir: Option<PathBuf>,
 }
 
 // =========== CONFIG ERROR ===============
