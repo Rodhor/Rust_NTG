@@ -1,7 +1,5 @@
 use std::path::{Component, Path, PathBuf};
 
-use ssh2::Session;
-
 use crate::domain::error::AppError;
 
 pub fn resolve_path(root: &Path, requested: &str) -> Result<PathBuf, AppError> {

@@ -16,7 +16,7 @@ pub async fn disconnect_blocking(session: Session) -> Result<(), AppError> {
 
 fn connect(config: SftpConfig) -> Result<Session, AppError> {
     let port = config.port.unwrap_or(22);
-    let timeout = Duration::from_secs(config.connect_timeout_secs.unwrap());
+    let timeout = Duration::from_secs(config.connect_timeout_secs);
     let addr = (config.host.as_str(), port)
         .to_socket_addrs()?
         .next()
@@ -31,6 +31,16 @@ fn connect(config: SftpConfig) -> Result<Session, AppError> {
     session.handshake()?;
 
     verify_host_key(&session, &config.host_key_sha256)?;
+
+    let password = config
+        .password
+        .as_deref()
+        .ok_or_else(|| AppError::Sftp("no password".to_string()))?;
+    session.userauth_password(&config.username, password)?;
+
+    if !session.authenticated() {
+        return Err(AppError::Sftp("authentication rejected".to_string()));
+    }
 
     Ok(session)
 }
