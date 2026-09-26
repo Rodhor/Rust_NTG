@@ -1,0 +1,47 @@
+# Local SFTP server for verifying the API.
+#
+# Test fixture only. Password auth, host key baked into the image, fixture data
+# checked in. Do not use any of this for a real deployment.
+#
+#   docker compose up -d --build      # start
+#   ./fingerprint.sh                  # print the value for SFTP_HOST_KEY_SHA256
+#   docker compose run --rm sftp-client   # poke at it with a real sftp client
+#   docker compose down -v            # stop and discard
+
+services:
+  sftp:
+    build:
+      context: .
+      dockerfile: Dockerfile.sftp
+      args:
+        SFTP_USER: ${SFTP_USER:-dev}
+        SFTP_PASSWORD: ${SFTP_PASSWORD:-dev-password}
+        ROOT_DIR: ${SFTP_ROOT_DIR:-/incoming}
+    # Bound to loopback deliberately: this server accepts a password and has a
+    # world-readable directory outside its own root. Never publish it.
+    # The same reasoning as Docs/api-bind-address.md, applied to the fixture.
+    ports:
+      - "127.0.0.1:2222:22"
+    healthcheck:
+      # bash's /dev/tcp probes the port without installing netcat.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/22"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 2s
+    restart: unless-stopped
+
+  # Same image, different job. Only started by `docker compose run`, so
+  # `up` stays at one container. Gives you a real ssh/sftp client for
+  # confirming what the server actually exposes.
+  sftp-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.sftp
+    profiles: ["tools"]
+    depends_on:
+      sftp:
+        condition: service_healthy
+    entrypoint: ["/bin/bash"]
+    tty: true
+    stdin_open: true

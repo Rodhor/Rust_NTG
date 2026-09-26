@@ -1,0 +1,108 @@
+  2026-09-26T21:40:04.046337Z  INFO rust_ntg: server listening, app: Rust NTG, addr: 127.0.0.1:8080
+    at src/main.rs:32
+
+  2026-09-26T21:41:00.051076Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 500 Internal Server Error, duration_ms: 151
+    at src/middleware.rs:17
+
+  2026-09-26T21:41:20.062197Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 7
+    at src/middleware.rs:17
+
+  2026-09-26T21:41:48.561307Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 500 Internal Server Error, duration_ms: 4
+    at src/middleware.rs:17
+
+  2026-09-26T21:41:54.044901Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:42:02.540672Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:42:08.154155Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 5
+    at src/middleware.rs:17
+
+  2026-09-26T21:52:26.112816Z  INFO rust_ntg::shutdown: shutdown signal received, draining connections
+    at src/shutdown.rs:5
+
+  2026-09-26T21:52:26.113475Z  INFO rust_ntg: server stopped
+    at src/main.rs:38
+
+  2026-09-26T21:52:30.066928Z  INFO rust_ntg: server listening, app: Rust NTG, addr: 127.0.0.1:8080
+    at src/main.rs:32
+
+  2026-09-26T21:52:35.444574Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 110
+    at src/middleware.rs:17
+
+  2026-09-26T21:52:40.067344Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.057344Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.067378Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.079094Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.088913Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.106160Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 5
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.151030Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 35
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.166807Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.175762Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.195253Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 6
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.239854Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 35
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.254356Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.263862Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.278872Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:54:16.288290Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:03.197208Z  INFO rust_ntg::shutdown: shutdown signal received, draining connections
+    at src/shutdown.rs:5
+
+  2026-09-26T21:59:03.197756Z  INFO rust_ntg: server stopped
+    at src/main.rs:38
+
+  2026-09-26T21:59:05.942585Z  INFO rust_ntg: server listening, app: Rust NTG, addr: 127.0.0.1:8080
+    at src/main.rs:32
+
+  2026-09-26T21:59:09.426356Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 500 Internal Server Error, duration_ms: 191
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:14.322348Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 5
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:19.626032Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 200 OK, duration_ms: 5
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:26.027859Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:32.056523Z  INFO rust_ntg::middleware: request completed, method: GET, path: /api/v1/sftp/list, status: 400 Bad Request, duration_ms: 0
+    at src/middleware.rs:17
+
+  2026-09-26T21:59:37.806557Z  INFO rust_ntg::shutdown: shutdown signal received, draining connections
+    at src/shutdown.rs:5
+
+  2026-09-26T21:59:37.807306Z  INFO rust_ntg: server stopped
+    at src/main.rs:38
+
