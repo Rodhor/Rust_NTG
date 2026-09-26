@@ -45,6 +45,9 @@ pub enum AppError {
 
     #[error("path {path:?} escapes root {root:?}")]
     PathEscapesRoot { path: String, root: String },
+
+    #[error("invalid query: {detail:?}")]
+    InvalidQuery { detail: String },
 }
 
 impl AppError {
@@ -60,6 +63,7 @@ impl AppError {
             AppError::SpawnBlocking(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::HostKeyMismatch { .. } => StatusCode::BAD_GATEWAY,
             AppError::PathEscapesRoot { .. } => StatusCode::BAD_REQUEST,
+            AppError::InvalidQuery { .. } => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -75,6 +79,7 @@ impl AppError {
             AppError::SpawnBlocking(_) => "SPAWN_BLOCKING_ERROR",
             AppError::HostKeyMismatch { .. } => "HOST_KEY_MISMATCH",
             AppError::PathEscapesRoot { .. } => "PATH_ESCAPES_ROOT",
+            AppError::InvalidQuery { .. } => "INVALID_QUERY",
         }
     }
 }

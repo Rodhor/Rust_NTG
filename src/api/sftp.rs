@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
+    #[serde(default)]
     pub path: String,
 }
 
