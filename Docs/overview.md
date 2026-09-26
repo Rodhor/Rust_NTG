@@ -14,7 +14,7 @@ and the alternatives that were rejected.
 
 | Doc | Topic | Summary |
 | --- | --- | --- |
-| [deployment.md](deployment.md) | Where it runs, how it is built | Everything runs on the Windows VM: backend, DB, files, UI. On-demand, not a service. Import must catch up, never assume "today's file". The `.exe` is built by GitHub Actions on `windows-latest` and copied over, because `ssh2`'s C dependencies (libssh2, OpenSSL) make cross-compiling from Linux painful. |
+| [deployment.md](deployment.md) | Where it runs, how it is built | Everything runs on the Windows VM: backend, DB, files, UI. On-demand, not a service. Import must catch up, never assume "today's file". Build and delivery route is **deferred** to roadmap Phase 9; development and testing are Linux-only until then. |
 | [data-model.md](data-model.md) | Schema and storage | SQLite, five tables. `items` uses a UUID primary key with `ean`/`sku` as indexed columns plus partial unique indexes, because the natural key is undecided. Operational state in columns, source data in one JSON blob per item — the blob is the archive that lets a newly added field be derived later without re-fetching from a transient remote file. The cleaned projection is never stored. WAL mode from day one. |
 | [field-mapping.md](field-mapping.md) | Vocabulary, rules, hashing | The split that resolves the central tension: **the ERP header vocabulary is a Rust enum, the instance configuration is database rows.** Headers are emitted from `ErpField::header()` and are never stored, so they cannot be wrong. The user edits which source column feeds which slot, with which ops, in which order. Ops are a closed typed enum — no parser, no `eval`. Hashes are over `\x1f`-separated `(ntg, value)` pairs in slot order, which avoids both map-order nondeterminism and concatenation ambiguity. |
 | [import.md](import.md) | SFTP fetch and ingest | The import is the difference between the remote directory and the ledger, so missed days are caught up automatically. Idempotency is mandatory and enforced by `UNIQUE(remote_path, size)`. One transaction per file, so a failure leaves no half-state. One SFTP session for the whole run, not the existing pool. |
@@ -22,7 +22,7 @@ and the alternatives that were rejected.
 | [api-surface.md](api-surface.md) | Endpoints and conventions | Versioned JSON under `/api/v1`, namespaced so a second tool is additive. Keyset pagination, never `OFFSET`. Bulk endpoints take a filter, not an id list. HTML routes share the same services and differ only in response type. |
 | [frontend.md](frontend.md) | UI technology | Server-rendered HTML via `askama` in the existing binary, with the `.exe` opening the browser. Judged against the actual six-screen inventory, five of which are forms and tables. Escalation path is askama → htmx islands → SPA, none of which touch the backend. Not on the critical path. |
 | [open-decisions.md](open-decisions.md) | What is still undecided | Twelve open points with recommendations. Item 1 (inactive slots shift-left vs hold-position, against a **positional** ERP import) is the highest-severity one and blocks Phase 6. |
-| [roadmap.md](roadmap.md) | The step plan | Phases 0–8 with deliverables and acceptance criteria. Phases 0–7 contain no frontend work. |
+| [roadmap.md](roadmap.md) | The step plan | Phases 1–9 with deliverables and acceptance criteria. Phases 1–7 contain no frontend work. |
 
 ## Deferred — explicitly not being built now
 

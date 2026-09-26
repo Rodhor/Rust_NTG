@@ -49,7 +49,7 @@ reactive framework — they require a `<form>` and a checkbox array.
 5. **The API is the real investment.** Every phase in [roadmap.md](roadmap.md)
    is backend work. A wrong frontend choice costs one folder; a wrong API shape
    costs everything. This decision is cheap to revisit, so it does not block
-   Phase 0–8.
+   Phases 1–8.
 
 ## Escalation Ladder
 

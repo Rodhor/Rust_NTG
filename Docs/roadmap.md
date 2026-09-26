@@ -1,33 +1,18 @@
 # Roadmap — Implementation Phases
 
-> **Status: Plan of record as of 2026-09-26. Sequenced, not scheduled.**
-> Phases 0–8 contain no frontend work. See [frontend.md](frontend.md).
+> **Status: Plan of record as of 2026-09-27. Sequenced, not scheduled.**
+> Phases 1–8 contain no frontend work. See [frontend.md](frontend.md).
+>
+> **Platform: Linux for all development, building, and testing.** Windows is
+> touched exactly once, at the end, to confirm the release binary runs — Phase 9.
+> There is deliberately **no CI/build-delivery phase**: nothing is delivered to
+> anyone until the project is finished, so a build pipeline would be plumbing for
+> a single consumer who already has the source.
 
 Each phase lists its **deliverables**, its **acceptance criterion** (the smallest
 observable thing that proves it works), and what it **depends on**. A phase is
 done when its acceptance criterion passes in the real environment, not when the
 code compiles.
-
----
-
-## Phase 0 — Build and delivery
-
-**Why first.** Every subsequent phase ends with "and it runs on the VM". If the
-build route is broken, that is discovered 8 times instead of once.
-
-**Deliverables**
-- `.github/workflows/windows.yml` — `workflow_dispatch` + push, `windows-latest`,
-  `cargo build --release --locked`, upload `target/release/rust-ntg.exe`.
-- `README` section: download the artifact, copy to the VM, run it.
-- Decide the `openssl` story for the Windows build: the default is the system
-  OpenSSL available on the runner; if the link fails, add
-  `ssh2 = { version = "0.9.6", features = ["vendored-openssl"] }` so the CI
-  runner builds its own copy. Do this once, in this phase.
-
-**Acceptance** — the artifact downloads from the Actions run page, runs on the
-VM, and `GET /api/v1/health` answers.
-
-**Depends on** — nothing.
 
 ---
 
@@ -51,7 +36,8 @@ VM, and `GET /api/v1/health` answers.
 **Acceptance** — the app starts, creates `app.db` and the four directories, runs
 migrations, and health reports the DB as reachable. Bruno can call it.
 
-**Depends on** — Phase 0.
+**Depends on** — nothing. This is now the first phase; there is no build or
+delivery prerequisite on Linux.
 
 ---
 
@@ -191,8 +177,36 @@ screens, static assets via `ServeDir`, and the browser launch on startup.
 command line: import, page through items, bulk approve, export, download both
 CSVs.
 
-**Depends on** — Phases 1–7. **This is the first phase that can slip** without
+**Depends on** — Phases 1–7. This is the first phase that can slip without
 blocking anything else, because the API is independently exercisable via Bruno.
+
+---
+
+## Phase 9 — Windows delivery
+
+The only Windows work in the plan, and it is deliberately last.
+
+**Deliverables**
+- Cross-compile from Linux: `rustup target add x86_64-pc-windows-gnu` plus a
+  mingw-w64 toolchain, then `cargo build --release --target x86_64-pc-windows-gnu`.
+- Settle the `openssl` story **here, not earlier**: the default is the system
+  OpenSSL the linker finds, which mingw does not reliably provide. If the link
+  fails, add `ssh2 = { version = "0.9.6", features = ["vendored-openssl"] }` and
+  rebuild. Doing it now would mean carrying a vendored OpenSSL build through
+  every phase of development for no benefit.
+- Copy `target/x86_64-pc-windows-gnu/release/rust-ntg.exe` to the Windows VM and
+  run it. `GET /api/v1/health` answers.
+
+**Acceptance** — the `.exe` starts on the VM and `GET /api/v1/health` answers,
+with `.env` supplied by hand as on any other platform.
+
+**Depends on** — Phase 8. Everything is finished before this is attempted; the
+purpose is only to confirm the artifact runs, not to develop against it.
+
+**Known risk, accepted** — `vendor` is recorded rather than treated as a blocker.
+If cross-compilation proves painful, the fallback is building on the Windows VM
+itself with the Rust toolchain installed. Either way it is a one-off, so it does
+not justify front-loading.
 
 ---
 
@@ -211,15 +225,15 @@ blocking anything else, because the API is independently exercisable via Bruno.
 ## Phase dependencies at a glance
 
 ```
-0  build/delivery
-└─ 1  foundations (db, config, errors)
-   └─ 2  domain model (ErpField, Source, Op)
-      └─ 3  pure core (parse, project, hash)  ← the only phase that needs real tests
-         └─ 4  import
-            └─ 5  decisions + list
-               └─ 6  export        ← blocked by open-decision 1
-                  └─ 7  field config + maintenance
-                     └─ 8  frontend  ← can slip
+1  foundations (db, config, errors)      ← current
+   2  domain model (ErpField, Source, Op)
+      3  pure core (parse, project, hash)  ← the only phase that needs real tests
+         4  import
+            5  decisions + list
+               6  export        ← blocked by open-decision 1
+                  7  field config + maintenance
+                     8  frontend      ← can slip
+                        9  windows delivery  ← once, at the end
 ```
 
 ## Related
