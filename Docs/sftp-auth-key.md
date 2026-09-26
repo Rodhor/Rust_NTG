@@ -109,6 +109,23 @@ restrict,from="<internal-network>" command="internal-sftp -d /incoming" ssh-ed25
 - **`ssh2::Session::userauth_password` kept permanently** — acceptable only if
   the server is unreachable from the open internet. Revisit if that changes.
 
+## Connection to the SSH Transport Decision
+
+[deployment.md](deployment.md) chose to build the Windows binary on
+`windows-latest` rather than cross-compile, because `ssh2` drags in libssh2 and
+OpenSSL as C dependencies. That choice keeps this document's plan intact: key
+auth works the same either way.
+
+This doc also gates one **alternative** recorded in `deployment.md` — shelling out
+to the `sftp.exe` that ships with Windows, which would make the app pure Rust and
+remove the cross-compilation problem entirely. That option needs key auth to be
+pleasant, because OpenSSH batch mode is frictionless with a key and awkward with
+a password on Windows (it requires `SSH_ASKPASS` tricks). So: if the CI route
+ever stops being acceptable, this doc is a prerequisite for the fallback.
+
+It also happens to be the stronger security story regardless, since the SFTP
+server is outside our network and a password is a reusable plaintext secret.
+
 ## References
 
 - `ssh2::Session::userauth_pubkey_file` — <https://docs.rs/ssh2/0.9.6/ssh2/struct.Session.html#method.userauth_pubkey_file>

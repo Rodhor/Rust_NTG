@@ -36,7 +36,7 @@ This project is **a learning exercise** — the user wants to understand the con
 
 - Question requests that aren't strictly needed now: is it needed, or can it wait?
 - If a feature is deferred, record it in `Docs/` (with a summary in `Docs/overview.md`) for later evaluation — do not build it now.
-- `Docs/` holds forward-looking notes only; do not treat them as current requirements.
+- `Docs/` holds two kinds of document, distinguished by their status line: **In force** (decisions to follow and reference) and **Deferred / Superseded** (forward-looking, not current requirements). Start at `Docs/overview.md`, then `Docs/roadmap.md` for the phase plan and `Docs/open-decisions.md` for anything still undecided.
 
 ## Communication Style
 

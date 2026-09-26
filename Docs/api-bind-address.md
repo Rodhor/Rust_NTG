@@ -1,7 +1,7 @@
 # API Bind Address — Exposure and Credential Delegation
 
-> **Status: Reconsider — not currently relevant, revisit if the frontend moves.**
-> The API is loopback-only today. This doc records the tripwire.
+> **Status: In force. The contradiction this doc used to carry is resolved.**
+> The API is loopback-only. The tripwire below is unchanged and still applies.
 
 ## The Decision (2026-09-26): bind to loopback
 
@@ -9,23 +9,25 @@
 access-control story: no API auth, no TLS, because only processes on this machine
 can reach the socket.
 
-## Open Contradiction
+## Contradiction: Resolved
 
-Two statements cannot both hold:
+This doc previously recorded an open contradiction:
 
 - the API binds `127.0.0.1`, **and**
 - a frontend runs on a *different internal server*.
 
-`127.0.0.1` accepts connections from the local machine only. A browser or client
-on another internal host cannot reach it. One of the following must be true, and
-which one is not yet decided:
+**Resolved 2026-09-26 by [deployment.md](deployment.md).** Everything runs on the
+Windows VM — backend, database, files and UI. There is no second machine serving
+a frontend, so `127.0.0.1` is reachable by everything that needs it and by
+nothing else. See option 1 of the original list: the frontend is served from this
+machine.
 
-1. The frontend is always **served from this machine** (internal servers only
-   host its source or build artifacts), or
-2. When the frontend moves, the API also moves to a machine that serves it.
+The UI is additionally confirmed to be server-rendered from the same binary
+([frontend.md](frontend.md)), so it is same-origin by construction — no CORS, no
+cross-host credential delegation, nothing for a browser-side script to inherit.
 
-If the answer is ever "the frontend is on another box, so I widened the bind",
-that is the trigger for this doc — and for real auth on the API.
+The tripwire below therefore stays exactly as written. It is now a guard against
+a future change rather than a live ambiguity.
 
 ## Why Widening the Bind Is Not a Small Change
 
@@ -56,8 +58,19 @@ required in the same change** — not as a follow-up:
 - A decision on which operations a given client may perform — in particular,
   anything that writes or deletes on the outside server
 
+The realistic triggers, should they ever occur:
+
+- the app is moved to a Linux server, or
+- the UI is ever run from another host (a hosted frontend, a phone, a second
+  workstation).
+
+Neither is planned. If either becomes real, this tripwire fires before the bind
+is widened, not after.
+
 ## Related
 
+- [deployment.md](deployment.md) — the decision that resolved the contradiction.
+- [frontend.md](frontend.md) — why the UI is same-origin with the API.
 - [sftp-auth-key.md](sftp-auth-key.md) — the other half of the credential story.
   Server-side `command="internal-sftp -d /incoming"` is the mitigation that holds
   even if this API is later exposed.

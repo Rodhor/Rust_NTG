@@ -1,58 +1,76 @@
-# Full Rust Stack — Frontend Path
+# Full Rust Stack — Frontend Path (Superseded)
 
-> **Status: Forward-looking. Not currently relevant — revisit at a later date.**
-> This doc records an intended future direction, not something to act on today.
+> **Status: Superseded 2026-09-26 by [frontend.md](frontend.md).**
+> Kept because the reasoning is worth understanding, and because the HTMX
+> re-reversal below is a useful lesson. **Do not follow this document.**
 
-## The Goal
+## What This Document Decided
 
-A web application built entirely in Rust:
+On 2026-09-24 the project was scoped as **API-only**: a pure Axum JSON REST API,
+no frontend, exercised with Bruno. The frontend question was deferred on two
+grounds:
 
-- **Backend:** Rust (Axum) — a JSON REST API. This is the **current** focus.
-- **Frontend (now):** none. The API is exercised directly with a tool such as Bruno.
-- **Frontend (later):** a frontend consuming the REST API, most likely **Leptos** as a single-page application (client-side rendering / WASM). Purely additive — no backend changes required.
+- a UI is not needed to validate the API, and Bruno exercises the same endpoints
+  faster than building a frontend would,
+- YAGNI — don't build a frontend until someone actually uses one.
 
-## Decision (2026-09-24): API-only scope
+The chosen future path was **Leptos as a client-side-rendered SPA**, purely
+additive, with the backend untouched. HTMX, Dioxus and Topcoat were considered
+and set aside.
 
-For now, this project builds a pure JSON REST API with **no frontend**. Reasoning:
+## Why It Was Superseded
 
-- A UI is not needed to validate the API; Bruno exercises the same endpoints faster than building a frontend would.
-- YAGNI: don't build a frontend until someone actually uses one.
-- The API contract is the thing worth getting right first. A frontend is then cheap to add later — the API must be stay-frontend-agnostic.
+The premise changed, not the reasoning. A UI became a **confirmed requirement**
+(a single user deciding which items to sell, in front of 400 source columns), and
+the user added a second consideration: the UI may need to host **several tools**
+over time, with the CSV tool being only the first.
 
-## Intended Path
+That second point is the one that actually changed the answer. A suite of tools
+wants a shared shell, client-side routing and no full page load when moving
+between tools — which is a genuine argument for a SPA and a weak one against
+server-rendered templates.
 
-1. **Phase 1 — now:** Axum JSON REST API only. No HTML rendering, no templates, no HTMX anywhere in the request path.
-2. **Phase 2 — later:** Choose and add a frontend that talks to the existing REST API (see Leptos below). Frontend-only work, done client-side or as a purely additive static/served layer.
+## What the Current Decision Is
 
-## Leptos Mode Decision: SPA (CSR), not Isomorphic
+See [frontend.md](frontend.md). In short: **server-rendered HTML via `askama`
+in the existing Axum binary**, with the `.exe` opening the browser.
 
-When the frontend is eventually built, the plan is a Leptos SPA rather than isomorphic (SSR + hydration):
+The deciding input was the actual screen inventory — five of the six screens are
+forms and tables — combined with the standing preference for a single copied
+binary as the deployment artefact. A WASM SPA would add a second build system
+and a version lock to save effort on screens that do not need it.
 
-- **SEO / crawlability** — the largest win of isomorphic SSR. Irrelevant for an internal tool.
-- **First-paint performance** — matters on public, content-heavy sites. Irrelevant on an internal network.
-- **Server functions (`#[server]`)** — the main selling point of isomorphic Leptos, but they duplicate what the REST API already does. Choosing isomorphic would mean either redundant server functions or Leptos pages calling the REST API anyway — i.e. an SPA with extra build complexity.
-- **Build complexity** — isomorphic requires `cargo-leptos`, two compile targets (server + WASM hydrate), and hydration plumbing. An SPA is a single WASM target that can be served statically (including from the existing Axum binary).
+The escalation path is recorded rather than dismissed: `askama` → `htmx` islands
+on the pages that need them → a SPA only if both fall short. The REST API is
+already the contract, so every step of that ladder is frontend-only.
 
-Cost accepted: every interaction crosses HTTP and the WASM bundle is downloaded on first load. Acceptable for an internal tool. Heavy transfers can still use streaming / SSE / WebSocket if ever needed.
+## The HTMX Reversal, and Why It Is Not a Contradiction
 
-## Constraints to Honor Now
+HTMX was rejected here **for the same reason it is now back on the ladder**:
+there was no UI to augment. Server-rendered HTML plus hypermedia-driven
+interactivity needs an existing interface to drive.
 
-These are requirements of the current API design, not just hedges for the eventual frontend:
+This is not a reversal of judgement, it is the same judgement applied at a
+different time. The general lesson worth keeping: *deferring a decision is
+correct; freezing the reasoning behind it is not.* Record what was true when the
+decision was made, and revisit it when that changes.
 
-- All `db` / `sftp` / `io` logic lives behind real JSON REST endpoints. The API is the contract.
-- Return structured JSON, not partial HTML. No server-side rendering concerns leak into the service layer.
-- Keep HTTP semantics clean (status codes, content types, error bodies) so any client — Bruno today, a browser SPA later — works without backend changes.
+## Constraints That Survived Into The Current Decision
 
-## Alternatives Considered
+These were the right call then and remain right now — the API is the contract,
+and it is what makes the frontend replaceable:
 
-- **HTMX** — server-rendered HTML with hypermedia-driven interactivity. Viable for a simple frontend, but rejected for now: there is no UI, so there is nothing for HTMX to augment. Revisit only if a lightweight server-rendered frontend is wanted later.
-- **Dioxus** — React-like virtual DOM, built on Axum, cross-platform (web/desktop/mobile/TUI). Viable, but Leptos was chosen for the web-first rewrite.
-- **Topcoat (tokio-rs)** — battery-included, server-rendered framework; renders HTML server-side and translates small Rust expressions to JavaScript for client interactivity (no WASM). Marked "early-stage and experimental — expect breaking changes." Not chosen; revisit later.
-- **Staying API-only indefinitely** — valid; reconsider if a UI is ever genuinely needed.
+- all `db` / `sftp` / `io` logic lives behind real endpoints,
+- structured JSON, not partial HTML, from the service layer,
+- clean HTTP semantics so any client works without backend changes,
+- **and the one this project most needs now:** versioned, namespaced resources, so
+  a second tool is `/api/v1/<tool>/…` rather than a redesign.
 
 ## References
 
-- Leptos: <https://github.com/leptos-rs/leptos> — full-stack framework, `leptos_axum` integration, `start-axum` template.
-- Dioxus: <https://dioxuslabs.com/> — fullstack built on Axum.
-- Topcoat: <https://github.com/tokio-rs/topcoat> — tokio-rs, experimental.
+- Leptos: <https://github.com/leptos-rs/leptos> · 0.8 is the current line.
+- Dioxus: <https://dioxuslabs.com/>
+- Topcoat (tokio-rs): <https://github.com/tokio-rs/topcoat> — experimental.
 - HTMX: <https://htmx.org/>
+- Askama: <https://github.com/askama-rs/askama> — with `askama_web` for the
+  axum 0.8 integration.
