@@ -13,6 +13,9 @@ pub fn upload_file(
     let remote_path = helpers::resolve_path(root, requested)?;
     let staging = file_helpers::sibling_with_suffix(&remote_path, None);
 
+    // clear any leftover staging files in case of a previous upload failure
+    let _ = sftp.unlink(&staging);
+
     let mut src = fs::File::open(local_path)?;
     let mut dst = sftp.open_mode(
         &staging,
@@ -28,7 +31,10 @@ pub fn upload_file(
     }
 
     drop(dst);
-    sftp.rename(&staging, &remote_path, Some(RenameFlags::empty()))?;
+    if let Err(e) = sftp.rename(&staging, &remote_path, Some(RenameFlags::empty())) {
+        let _ = sftp.unlink(&staging);
+        return Err(e.into());
+    }
 
     Ok(remote_path.to_string_lossy().to_string())
 }
@@ -43,8 +49,10 @@ pub fn download_file(
 
     let remote_path = helpers::resolve_path(root, requested)?;
     let staging = file_helpers::sibling_with_suffix(local_path, Some(".part"));
-
     let mut src = sftp.open(&remote_path)?;
+
+    // clear any leftover staging files in case of a previous upload failure
+    let _ = fs::remove_file(&staging);
     let mut dst = fs::File::options()
         .write(true)
         .create_new(true)
@@ -57,8 +65,10 @@ pub fn download_file(
     }
 
     drop(dst);
-
-    fs::rename(&staging, &local_path)?;
+    if let Err(e) = fs::rename(&staging, &local_path) {
+        let _ = sftp.unlink(&staging);
+        return Err(e.into());
+    }
 
     Ok(remote_path.to_string_lossy().to_string())
 }
@@ -86,14 +96,12 @@ pub fn move_remote_file(
     let src = helpers::resolve_path(root, from_requested)?;
     let dst = helpers::resolve_path(root, to_requested)?;
 
-    match overwrite {
-        true => {
-            sftp.rename(&src, &dst, Some(RenameFlags::OVERWRITE))?;
-        }
-        false => {
-            sftp.rename(&src, &dst, Some(RenameFlags::empty()))?;
-        }
-    }
+    let flags = if overwrite {
+        RenameFlags::OVERWRITE
+    } else {
+        RenameFlags::empty()
+    };
+    sftp.rename(&src, &dst, Some(flags))?;
 
     Ok(dst.to_string_lossy().to_string())
 }
