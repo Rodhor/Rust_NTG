@@ -1,14 +1,20 @@
 # Frontend Choice
 
-> **Status: Decided 2026-09-26. In force when the UI is built.**
-> Server-rendered HTML from the existing Axum binary, with a `.exe` that opens
-> the browser. The UI is not on the critical path for the API phases.
+> **Status: Decided 2026-09-26, revised 2026-09-27. In force when the UI is
+> built.**
+> Server-rendered HTML from the existing Axum binary. The UI is not on the
+> critical path for the API phases.
+>
+> **Revised 2026-09-27:** the app now runs on a Linux server and the operator's
+> browser is on Windows, so the app can no longer open a browser — it logs its
+> URL instead. It remains same-origin behind nginx, which is all the CORS
+> reasoning below depended on.
 
 ## The Decision
 
 **Server-rendered HTML.** `askama` templates mounted into the existing Axum
-router. The shipped artefact is the same single `rust-ntg.exe`; on startup it
-binds `127.0.0.1:8080` and opens the default browser at the root path.
+router. The shipped artefact is the same single binary; on startup it binds
+`127.0.0.1:8080` and logs the URL. nginx puts it on HTTPS for the browser.
 
 No WASM. No JavaScript framework. No second build. No second process.
 
@@ -37,8 +43,8 @@ reactive framework — they require a `<form>` and a checkbox array.
 ## Why Server-Rendered Wins Here
 
 1. **Deployment is the stated priority, and this is the only option that
-   achieves it with zero new build machinery.** One `.exe`. See
-   [deployment.md](deployment.md).
+   achieves it with zero new build machinery.** One binary, one systemd unit, no
+   second artefact to keep in sync. See [deployment.md](deployment.md).
 2. **Bulk selection is *simpler*, not harder.** Screen 2's "select all on this
    page, then approve" is one `<form method="post">` with `id[]` checkboxes.
    In a SPA you hand-build selection state that HTML gives you for free.
@@ -135,11 +141,16 @@ dependencies ever matters more than language consistency.
   `tower_http::services::ServeDir`. No bundler, no npm.
 - Escaping is on by default in `askama`; never reach for `|safe` on data that
   originates from the imported CSV. That data is untrusted input.
-- Opening the browser on startup: a small platform-specific call
-  (`cmd /c start`, or the `open`/`xdg-open` equivalents). It is a UX nicety,
-  not a dependency — the app must work fine when it is not opened.
-- SQLite must be in **WAL** mode or a long import blocks the UI's reads and the
-  page appears frozen. Set at startup, not per connection.
+- Opening the browser on startup: **no longer applicable.** The app runs on a
+  Linux server and the browser is on a different machine, so it logs the URL it
+  is serving instead. The nicety it bought — "no typing the URL" — is now
+  provided by a bookmark.
+- **No journal-mode configuration is needed for the UI to stay responsive.** The
+  previous version of this document required SQLite in **WAL** mode, because
+  otherwise a long import held the write lock and the UI's reads blocked,
+  freezing the page mid-import. On PostgreSQL, MVCC gives readers a consistent
+  snapshot while a writer works, so the problem does not exist and there is
+  nothing to configure.
 
 ## Related
 

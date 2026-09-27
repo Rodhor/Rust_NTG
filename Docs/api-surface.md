@@ -105,7 +105,7 @@ has no ordering or partial-failure semantics to get wrong.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/v1/erp/sync` | GraphQL push to the ERP. **Not available yet** — the endpoint is local and requires auth, so this is not currently actionable |
+| `POST` | `/api/v1/erp/sync` | GraphQL push to the ERP. **Now actionable** — the Linux server reaches the ERP's GraphQL endpoints (2026-09-27). Transport choice vs the CSV is [open-decisions.md](open-decisions.md) item 13; the endpoint needs an ERP credential in config, see item 15 |
 
 This is the reason the item identity question is worth settling early: the CSV
 path lets the **ERP** decide new-vs-update via upsert, but the GraphQL path
@@ -125,6 +125,12 @@ requires **this program** to decide. See [open-decisions.md](open-decisions.md).
 
 Each needs `#[from]` where a source chain exists, an `#[error(...)]` message, and
 entries in `status()` and `code()`.
+
+**One `sqlx` variant, not two.** sqlx 0.9 provides
+`impl From<MigrateError> for sqlx::Error`, so a separate `Migration` variant is
+redundant: `?` on a `MigrateError` already converts. A dedicated variant would be
+a second thing to keep in sync for no extra information. The code currently has
+both `Database` and `Migration`; consolidate to one.
 
 ## HTML Routes Are Separate
 

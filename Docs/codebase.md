@@ -14,10 +14,17 @@
 ## What this project is
 
 A Rust/Axum HTTP service that moves files between an external SFTP server and
-the local filesystem, and will eventually hold a SQLite ledger of items imported
+the local filesystem, and will eventually hold a ledger of items imported
 from ERP CSV exports. No frontend yet; the API is exercised directly with Bruno or
 curl. It is a learning project, so the reasoning behind a decision matters as much
 as the decision.
+
+> **The database layer is mid-transition (2026-09-27).** The decision is
+> **PostgreSQL**; the code still says `SqlitePool` and `features = ["sqlite"]`.
+> Everything below describes **the code as it is**, not the decision. If a line
+> here says SQLite, that is a description of the current state, not a
+> recommendation. See [data-model.md](data-model.md) for the decision and
+> [roadmap.md](roadmap.md) Phase 1 for the work.
 
 Single crate `rust-ntg`, edition 2024, ~1230 lines of Rust in 31 files, 10 direct
 dependencies. Phase 1 of 9 is in progress: the SFTP layer is complete and the
@@ -83,7 +90,7 @@ base64, the one the app wants is hex.
 | `api/sftp/file_handler.rs` | Query structs and handlers for the five file endpoints; `local_target` resolves local paths. |
 | `api/sftp/dir_handler.rs` | Query structs and handlers for the three directory endpoints. |
 | `api/csv/`, `api/operations/` | Route stubs only — no handlers yet. |
-| `csv/mod.rs`, `db/mod.rs` | Empty. Phase 1 and Phase 6 respectively. |
+| `csv/mod.rs`, `db/mod.rs` | `db/mod.rs` is nearly empty; `db/connection.rs` holds the pool setup. `csv/mod.rs` is empty — Phase 6. |
 
 ## Configuration
 
@@ -100,7 +107,7 @@ runs at startup and is the only gate — an unvalidated field reaches the SFTP l
 | `SFTP_IN_DIR`, `SFTP_OUT_DIR`, `SFTP_ARCHIVE_DIR` | `in`, `out`, `archive` | Optional, all default `None`. For the Phase 4 import workflow, not used yet. |
 | `SFTP_CONNECT_TIMEOUT_SECS`, `SFTP_POOL_SIZE` | `10`, `2` | The pool is deliberately small. One session per in-flight request, so size is a concurrency limit. |
 | `SFTP_HOST_KEY_SHA256` | — | 64 hex characters, no `SHA256:` prefix. **Mandatory**, and validated for length and hex. |
-| `DATABASE_URL`, `DATABASE_POOL_SIZE`, `DATABASE_MAX_CONNECTIONS` | `sqlite:///app.db`, `1`, `1` | Unused. Phase 1. |
+| `DATABASE_URL`, `DATABASE_POOL_SIZE`, `DATABASE_MAX_CONNECTIONS` | `sqlite:///app.db`, `1`, `1` | **Being changed.** `url` and `max_connections` are read by `src/db/connection.rs`; `pool_size` is still unread. The default URL is still SQLite but the decision is PostgreSQL — see [data-model.md](data-model.md). |
 
 `local_root_dir` must be a **relative** path. It is created by `main` as a
 non-root user, so an absolute path at the filesystem root fails startup with
@@ -249,8 +256,8 @@ the code.
 Phase 1 in progress. `cargo build` emits 6 warnings, all of them placeholders
 waiting for a later phase rather than defects:
 
-- `DatabaseConfig::{url, pool_size, max_connections}` and the `Config::database`
-  field are never read — Phase 1.
+- `DatabaseConfig::pool_size` and the `Config::database` fields not yet read —
+  Phase 1. (`url` and `max_connections` *are* read, by `src/db/connection.rs`.)
 - `Paginated`, `Pagination`, and `Paginated::new` are never constructed — needed
   for the item list in Phase 5.
 
@@ -263,11 +270,22 @@ Known, deliberate, and not yet fixed:
   writes into the root; revisit if that changes.
 - Temp file names are predictable. Safe because of invariant 4, but a `uuid`
   suffix would remove the reliance. Phase 1 adds the dependency.
-- The frontend cannot reach a loopback-bound API from another machine. Resolved by
-  the single-VM decision, but it is the tripwire to watch in
-  [api-bind-address.md](api-bind-address.md).
-- `src/db/mod.rs` and `src/csv/mod.rs` are empty. `sqlx`, `csv`, `sha2`, and
-  `uuid` are not yet dependencies.
+- **`GET /health` reports a database field that is not a reachability check.**
+  It reports `state.db_pool.is_closed().to_string()`, which is a purely local
+  flag — the pool is essentially never closed while the server is up, so it
+  reports "reachable" for a database that has gone away. It needs a real query.
+  This is the only current reader of `db_pool`.
+- **`src/db/connection.rs` is SQLite, and the decision is PostgreSQL.** The
+  engine swap is the outstanding Phase 1 work. See
+  [data-model.md](data-model.md) for the reasoning and the dialect list.
+- **`src/db/queries/` and `src/db/migrations/` are empty.** The first migration
+  is being written next; until it exists, `cargo sqlx prepare` has no schema to
+  validate against and `--check` passes vacuously.
+- The frontend cannot reach a loopback-bound API from another machine. **This is
+  now real** — the app moved to a Linux server and the browser is on Windows. It
+  is resolved by nginx, not by moving the app off loopback, and the tripwire in
+  [api-bind-address.md](api-bind-address.md) is what forced nginx into existence.
+- `src/csv/mod.rs` is empty. `csv`, `sha2`, and `uuid` are not yet dependencies.
 
 ## Where to look
 

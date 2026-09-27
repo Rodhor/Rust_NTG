@@ -1,8 +1,17 @@
 # Export — ERP CSV and Picture CSV
 
-> **Status: Decided 2026-09-26. In force.**
+> **Status: Decided 2026-09-26. In force, but the transport is now contested.**
 > One items CSV plus one picture CSV per export run. Selection is driven by
 > `last_exported_hash` so unchanged items are not re-sent.
+>
+> **Updated 2026-09-27.** The *selection logic, hashing and bookkeeping in this
+> document are unaffected* by the deployment change, and the endpoints still work.
+> What is now open is **whether CSV is the delivery mechanism at all** — the
+> Linux server can reach the ERP's GraphQL endpoints, so a direct push is
+> available and would remove the positional-import risk described below. See
+> [open-decisions.md](open-decisions.md) items 13 and 14. Everything here that is
+> about *choosing what to send* survives; everything about *the file format* is
+> contingent on that decision.
 
 ## Selection
 

@@ -111,20 +111,26 @@ restrict,from="<internal-network>" command="internal-sftp -d /incoming" ssh-ed25
 
 ## Connection to the SSH Transport Decision
 
-[deployment.md](deployment.md) chose to build the Windows binary on
-`windows-latest` rather than cross-compile, because `ssh2` drags in libssh2 and
-OpenSSL as C dependencies. That choice keeps this document's plan intact: key
-auth works the same either way.
+**Revised 2026-09-27.** The original text here argued that key auth must work
+"the same either way" because [deployment.md](deployment.md) had chosen to build a
+Windows binary on `windows-latest` rather than cross-compile. **That decision is
+obsolete** — the app now targets Linux, where the system OpenSSL is what the
+linker finds and the whole cross-compilation problem does not arise. See
+[deployment.md](deployment.md) for the list of what was dropped.
 
-This doc also gates one **alternative** recorded in `deployment.md` — shelling out
-to the `sftp.exe` that ships with Windows, which would make the app pure Rust and
-remove the cross-compilation problem entirely. That option needs key auth to be
-pleasant, because OpenSSH batch mode is frictionless with a key and awkward with
-a password on Windows (it requires `SSH_ASKPASS` tricks). So: if the CI route
-ever stops being acceptable, this doc is a prerequisite for the fallback.
+Key auth is therefore no longer *gated* on the transport, and this document is
+purely a security upgrade rather than a build-enabler. It remains worthwhile for
+its own sake: the SFTP server is outside our network, so a password is a
+reusable plaintext secret, and a key with server-side `authorized_keys`
+restrictions is a strictly better credential.
 
-It also happens to be the stronger security story regardless, since the SFTP
-server is outside our network and a password is a reusable plaintext secret.
+The `sftp.exe` shell-out alternative is **no longer recorded as a fallback**, for
+two independent reasons: the app no longer targets Windows, so there is no bundled
+`sftp.exe` to shell out to, and the Linux OpenSSL story is not currently a
+problem. It would only become relevant again if the C dependency became painful on
+Linux, at which point shelling out to a system `sftp` binary — not the Windows
+one — would be the shape of it, and this document's key-auth plan would be the
+prerequisite for it being pleasant.
 
 ## References
 

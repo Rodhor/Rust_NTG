@@ -1,136 +1,184 @@
 # Deployment Target and Build/Delivery
 
-> **Status: Target decided 2026-09-26, revised 2026-09-27. In force (target).**
-> Everything — backend, database, files, UI — runs on the Windows VM.
-> **How** the `.exe` gets built is *not* decided — see the deferred section below.
-> Development, building, and testing are Linux-only until the project is finished.
+> **Status: Target reversed 2026-09-27, superseding the 2026-09-26 decision.
+> In force (target).**
+> The app runs on a **Linux server**. The browser runs on Windows and reaches it
+> through **nginx on the Linux server**, which terminates TLS and authentication.
+> The app itself stays bound to `127.0.0.1`.
+> **How** the release is built and delivered is still not decided — see the
+> deferred section below.
+
+## What changed, and why
+
+The previous target (everything on the Windows VM) was decided on 2026-09-26 and
+rested on one fact: **the VM could already reach the SFTP server**, which was the
+unknown that made a split deployment conceivable. That same fact was then asked
+about the *other* machine, and it turned out the Linux server reaches both
+externals:
+
+| Reachability | Confirmed 2026-09-27 |
+| --- | --- |
+| Linux server → SFTP server | **Yes** — the inbound CSV is pulled from here |
+| Linux server → ERP GraphQL endpoints | **Yes** — items are pushed from here |
+| Windows → Linux server | **Yes** — this is how the browser reaches the app |
+
+So the deciding fact did not reverse — it was simply asked in the other direction
+and came back the same way. With every external dependency reachable from the
+Linux box, keeping the app on Windows bought nothing and cost the ERP integration
+(see below). Both servers are under the same control, so the operational cost of
+the split is a service file and an nginx config.
+
+**The two things that made the split attractive:**
+
+1. **No item data has to cross between the servers.** The inbound CSV is pulled
+   by the Linux server from the external SFTP server, and items are pushed to the
+   ERP over GraphQL. The Windows machine is a browser and nothing more. The old
+   "the CSV and pictures are on the wrong machine" objection does not apply to
+   items.
+2. **The app stops competing with the ERP for the same box.** The old target ran
+   the app, the database, the ERP and the operator's interactive session on one
+   Windows VM, so a heavy import contended with whatever else was running.
+
+**What the split does cost** — honestly, and it is not nothing:
+
+- A database server to install, secure, back up and keep alive, instead of a file
+  you can `cp`. See [data-model.md](data-model.md) for why PostgreSQL was chosen
+  anyway.
+- nginx, TLS certificates, and API authentication — the tripwire in
+  [api-bind-address.md](api-bind-address.md) **fires** with this change and is
+  satisfied at the proxy.
+- Pictures still have to cross the machine boundary, because they are binaries
+  and GraphQL is a poor transport for them. Currently expected to be `robocopy`
+  from Windows to an SMB share on Linux, which is the one direction the
+  reachability table guarantees. Undecided — see
+  [open-decisions.md](open-decisions.md).
+- Backup is no longer a folder copy. PostgreSQL needs `pg_dump`.
 
 ## The Decision
 
-**The entire application runs on the Windows VM.** There is no second machine
-serving a frontend, and no Linux server in the request path.
+**The application and its database run on a Linux server. The operator's browser
+runs on Windows.**
 
-The VM:
+```
+  Windows workstation                    Linux server
+  ┌──────────────────────┐               ┌─────────────────────────────┐
+  │  browser  ───────────┼── HTTPS ─────▶│  nginx  (TLS + auth)        │
+  │  (no app, no DB)     │               │    │                        │
+  └──────────────────────┘               │    ▼ 127.0.0.1:8080         │
+                                         │  rust-ntg (Axum)           │
+                                         │    │                        │
+                                         │    ├──▶ PostgreSQL 127.0.0.1│
+                                         │    ├──▶ SFTP server   (out) │
+                                         │    └──▶ ERP GraphQL   (out) │
+                                         └─────────────────────────────┘
+```
 
-- reaches the SFTP server (FileZilla already does, from that machine),
-- runs the ERP, which is local and exposes an authenticated GraphQL endpoint,
-- holds the SQLite database, the picture folder, the export folder.
+Both machines are controlled by the same operator. There is no CI pipeline and
+nothing is delivered to anyone else.
 
 ## Why This Target Won
 
 | Option | Verdict |
 | --- | --- |
-| **Everything on the Windows VM** | **Chosen.** Removes the auth question, puts the ERP CSV where the ERP already is, keeps all data on one machine. |
-| Backend on a Linux server, browser on the VM | Rejected. Forces a LAN bind, which forces auth + TLS (see [api-bind-address.md](api-bind-address.md)), and leaves the CSV and pictures on the wrong machine. |
+| **App + DB on a Linux server, browser on Windows, nginx in front** | **Chosen (2026-09-27).** The Linux box reaches both externals, so items never need to cross between the machines. App and ERP stop contending for one box. |
+| Everything on the Windows VM | **Superseded 2026-09-27.** Was chosen 2026-09-26 on the assumption that keeping items local was worth more than reaching the ERP. Once the Linux box was confirmed to reach both the SFTP server *and* the ERP GraphQL endpoints, the ERP integration stopped being a reason to stay on Windows, and the app no longer shares a machine with the ERP. |
+| Backend on a Linux server, browser on the VM, **no proxy** | Rejected. A bare LAN bind puts an unauthenticated, unencrypted, credentialed proxy on the network — exactly what [api-bind-address.md](api-bind-address.md) forbids. nginx is what makes the split safe. |
 
-The deciding fact: **the VM can already reach the SFTP server.** That was the
-unknown that made a split deployment conceivable. It is settled.
+## Consequences of the Split
 
-## Consequences of Everything Being Local
+1. **`APP_BIND_ADDR=127.0.0.1` still stays.** This is the load-bearing
+   consequence. nginx is the trust boundary; the app keeps a loopback socket and
+   is unreachable from the LAN except through the proxy, which authenticates and
+   encrypts. The tripwire's requirements are met at the proxy rather than deleted.
+2. **nginx is mandatory, not a convenience.** It must terminate TLS, and it must
+   require authentication before forwarding. Until both exist, the app should not
+   be started at all. There is no "or just use the IP directly" variant — that
+   reopens exactly the hole the tripwire describes. If nginx is down and a
+   fallback is wanted, an SSH tunnel preserves the invariant; a raw bind does not.
+3. **The import must still catch up, never "take today's file".** This is
+   unchanged and is now the *most* important property of the deployment, because
+   a Linux server will be restarted and updated far more often than a VM that
+   only runs when the operator launches it. If the server was off for three days,
+   three days of files are on the SFTP server and all of them must be picked up.
+4. **Backup is no longer `cp`.** `pg_dump` plus the `imports/`, `pictures/` and
+   `logs/` directories. The `imports/` directory is not optional: it is what makes
+   re-derivation possible if a file is ever removed from the remote directory.
+5. **The app is a service, not an on-demand double-click.** A systemd unit, with
+   the nightly import triggered by a timer. The old "on-demand, opened by the
+   user" shape is gone, and with it the "no in-process daily timer" reasoning
+   that justified it — the OS scheduler argument in the previous version of this
+   document still holds and is now the *only* scheduler.
 
-1. **`APP_BIND_ADDR=127.0.0.1` stays.** Loopback is the whole access-control
-   story. No API auth, no TLS. The tripwire in
-   [api-bind-address.md](api-bind-address.md) is unchanged and still applies.
-2. **The ERP CSV is written where the ERP already is.** No download step, no SMB
-   share, no artifact transfer.
-3. **Backup is a folder copy.** `app.db` + `imports/` + `pictures/` +
-   `exports/` + `logs/`. Scriptable with a single `robocopy`/`cp`.
-4. **One machine to reason about.** One failure domain, one place to look.
+## The App Is a Long-Running Service
 
-## The App Is On-Demand, Not Always-On
-
-The app does **not** need to survive a reboot on its own. It starts when the
-user launches it, or when a scheduled task triggers it. It is not a Windows
-service.
+The app runs continuously under systemd and is started by a timer or restarted
+after a deployment, not by a human double-clicking an icon.
 
 ### What That Forces
 
-**1. No in-process daily timer.** A `tokio::time::interval` would mean reasoning
-about missed runs, clock changes and overlap for no benefit. The OS scheduler
-already does retries, reboot handling and logging. Import is triggered by:
+**1. The import is triggered by the OS scheduler, not by app start.** A
+`systemd` timer (or `cron`) calls the import endpoint. This keeps the previous
+reasoning intact: a `tokio::time::interval` would mean reasoning about missed
+runs, clock changes and overlap for no benefit, and the OS scheduler already
+handles retries, restart-after-failure and logging.
 
-- app start (user launches the exe),
-- a "Import now" action in the UI,
-- Windows Task Scheduler calling the import endpoint, if unattended runs are
-  wanted.
-
-**2. The import must catch up, never "take today's file".** This is the single
-most important consequence. If the VM was off for three days, three days of files
-are sitting on the SFTP server and they must all be picked up.
-
-Therefore: **idempotency is mandatory, not an optimisation.** The `imports`
-table is the authority on "what do I already have", keyed on
-`(remote_path, size)`. The import is defined as *the difference between what the
-remote directory contains and what the ledger records* — not as *a file for
-today*. See [import.md](import.md).
-
-**3. Cheapest possible deploy is a single `.exe`.** It binds `127.0.0.1:8080`,
-opens the default browser at `http://127.0.0.1:8080`, and keeps its data in a
-folder next to itself (or under `%LOCALAPPDATA%`). No installer, no service, no
-registry entries, no `Program Files` writes. `Task Scheduler` with "run at logon"
-if the user wants it up automatically.
+**2. `SFTP_DEFAULT_OUT_DIRECTORY` / `SFTP_DEFAULT_ARCHIVE_DIRECTORY` semantics
+are now more important, not less.** With a service that runs unattended every
+night, whatever the app does to consumed files on *someone else's* server happens
+without a human watching. See [open-decisions.md](open-decisions.md) item 5.
 
 ## Build and Delivery
 
-> **Status: Deferred as of 2026-09-27. Not a current requirement.**
-> The route is chosen in [roadmap.md](roadmap.md) Phase 9, once there is a
-> finished binary to produce. Nothing in this section constrains day-to-day work:
-> on Linux the build is just `cargo build`, and the C dependency question does not
-> arise. The analysis is kept because it is still the right analysis when the time
-> comes.
+> **Status: Deferred. Not a current requirement.**
+> The previous target needed a cross-compiled Windows `.exe` and a long analysis
+> of the `ssh2` → libssh2 → OpenSSL C dependency chain. **That analysis is
+> obsolete**: the app is built for and runs on Linux, where `cargo build` is the
+> whole story and the C dependency is whatever the distribution provides. The
+> remaining question is only how a release binary and a `.env` reach the Linux
+> server, which is a `scp` and a service restart. Chosen in
+> [roadmap.md](roadmap.md) Phase 9, when there is a finished binary to produce.
 
-### The Problem
+### What replaced the Windows cross-compile analysis
 
-The app depends on `ssh2`, which is Rust bindings to **libssh2 (C)** and pulls in
-**OpenSSL (C)**. `libssh2-sys/build.rs` looks for vcpkg on MSVC targets and
-otherwise compiles libssh2 from bundled C source; OpenSSL comes from the system
-or from `openssl-src` (needs Perl, and a matching C toolchain). So "build on
-Linux, copy a binary over" is not free.
+| Old concern | Status now |
+| --- | --- |
+| `x86_64-pc-windows-gnu` + mingw-w64 + Perl | **Dropped.** No Windows binary is produced. |
+| Vendoring OpenSSL for an MSVC target | **Dropped.** Same reason. |
+| GitHub Actions `windows-latest` | **Dropped**, and there is still no CI. |
+| `russh`/`russh-sftp` to shed the C dependency | **Dropped.** The OpenSSL the system provides on Linux is fine. |
+| Shell out to a system `sftp` binary | **Dropped**, but see [sftp-auth-key.md](sftp-auth-key.md) — it remains the recorded fallback if the C dependency ever becomes a problem on Linux. |
 
-### Options Considered
-
-| | Build on Linux → copy exe | Local effort | Keeps `src/sftp/`? |
-| --- | --- | --- | --- |
-| A. GitHub Actions `windows-latest` | n/a — real MSVC toolchain, download the artifact | ~15 lines of YAML | **Yes, untouched** |
-| B. `cargo-xwin` → `x86_64-pc-windows-msvc` | Vendored OpenSSL for an *MSVC target* from Linux is the risky part | Days if it fails | Yes |
-| C. `x86_64-pc-windows-gnu` + `vendored-openssl` | mingw-w64 + Perl; `+crt-static` for a standalone exe | Moderate | Yes |
-| D. `russh` + `russh-sftp` (pure Rust) | `ring` on windows-msvc via cargo-xwin has a known open issue; clean on windows-gnu | Rewrite of `src/sftp/` (~150 lines) | No |
-| E. Shell out to the Windows-bundled `sftp.exe` | App becomes pure Rust, zero C deps | ~80 lines + output parsing | No |
-| F. Install the Rust toolchain on the VM and build there | None — the build simply happens on the target | Minutes, once | Yes |
-
-**No option is chosen.** C is the current front-runner because it keeps the
-work on Linux, which is where all of it already happens; F is the reliable
-fallback if mingw proves troublesome; A is still the least risky *toolchain* but
-costs a CI pipeline for a single consumer, which is not worth it for a prototype.
-
-Option E is the genuinely laziest alternative and is recorded here for the day
-the build route stops being acceptable. It dovetails with
-[sftp-auth-key.md](sftp-auth-key.md): OpenSSH batch mode is frictionless with a
-key and awkward with a password on Windows (it needs `SSH_ASKPASS`), and
-`known_hosts` does host-key pinning better than the hand-rolled check in
-`src/sftp/connection.rs:38`.
-
-Note `cargo sqlx prepare` will **not** be needed on any of these routes: the
-database layer uses sqlx's runtime query API (`sqlx::query` + `FromRow`), not the
-compile-time macros. That is a deliberate choice so the build never needs a live
-database or a checked-in `.sqlx/` directory.
+One genuine simplification follows from this target: the build no longer needs
+`cargo sqlx prepare` to be a special case, because the target platform is the
+development platform. See [data-model.md](data-model.md).
 
 ### Acceptance
 
-- `rust-ntg.exe` runs on the VM, prints its resolved config paths, and answers
-  `GET /api/v1/health`.
-- The DB, `imports/`, `pictures/`, `exports/` and `logs/` are created relative to
-  the working directory on first run.
+- `rust-ntg` runs on the Linux server under systemd, and `GET /api/v1/health`
+  answers through `https://<server>` with nginx in front.
+- Health reports the database as reachable with a real query, not a local flag.
 
-## Configuration Additions
+## Configuration
 
 ```ini
+# === SERVER ===
+APP_BIND_ADDR=127.0.0.1:8080     # stays loopback; nginx is the only client
+
+# === DATABASE ===
+DATABASE_URL=postgres://rust_ntg:<password>@127.0.0.1/rust_ntg
+DATABASE_MAX_CONNECTIONS=2
+
 # === PATHS ===
-APP_DB_PATH=app.db
 IMPORTS_DIR=imports
 PICTURES_DIR=pictures
 EXPORTS_DIR=exports
 ```
+
+`DATABASE_URL` rather than a path, because the URL is engine-neutral: it is the
+one key that does not change when the database engine does, and it is what lets
+the same `.env` work in development and on the server. Note that the URL now
+carries a password, so `DatabaseConfig` must redact it in `Debug` — see
+[open-decisions.md](open-decisions.md).
 
 `SFTP_DEFAULT_IN_DIRECTORY` / `OUT` / `ARCHIVE` already exist. Whether the app
 moves, renames or archives source files **on the SFTP server** after import is
@@ -138,7 +186,10 @@ still undecided — see [open-decisions.md](open-decisions.md).
 
 ## Related
 
-- [api-bind-address.md](api-bind-address.md) — why the bind stays on loopback.
-- [sftp-auth-key.md](sftp-auth-key.md) — the credential story.
-- [frontend.md](frontend.md) — why the UI is served from this same binary.
-- [roadmap.md](roadmap.md) — Phase 9 is where the build route above gets chosen.
+- [api-bind-address.md](api-bind-address.md) — why the bind stays loopback and
+  nginx becomes the trust boundary.
+- [data-model.md](data-model.md) — why PostgreSQL rather than a SQLite file, and
+  why that choice is a *daily* cost as well as an operational one.
+- [open-decisions.md](open-decisions.md) — picture transport, the ERP credential,
+  and remote file handling.
+- [roadmap.md](roadmap.md) — Phase 9 is where the build route gets chosen.

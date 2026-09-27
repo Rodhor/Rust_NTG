@@ -9,9 +9,26 @@ A Rust web application (v0.1.0) built with Axum that provides a REST API for man
 Single crate (`rust-ntg`, edition 2024, axum 0.8, ssh2 0.9), ~1230 lines, 10 direct dependencies. **Phase 1 of 9 in progress** — see `Docs/roadmap.md`.
 
 - **Done**: server bootstrap, config/logging, error envelope, `ApiQuery` extractor, SFTP connection with host-key pinning, a 2-session `SessionPool`, all 8 SFTP endpoints (3 directory, 5 file), path safety, graceful shutdown including SFTP disconnect.
-- **Not started**: database (`src/db/mod.rs` is empty; `sqlx`, `csv`, `sha2`, `uuid` are not yet dependencies), CSV handling, frontend.
-- `cargo build` emits **6 warnings, all expected** — unused `DatabaseConfig` fields and unused `Paginated`/`Pagination`, both waiting on later phases. Do not "fix" them by deleting the types; they are consumed later.
+- **Not started**: CSV handling, frontend.
+- `cargo build` emits **6 warnings, all expected** — unused `DatabaseConfig::pool_size` and unused `Paginated`/`Pagination`, both waiting on later phases. Do not "fix" them by deleting the types; they are consumed later.
 - A throwaway SFTP server for development lives in `docker/`. Start it with `newgrp docker -c 'docker compose -f docker/docker-compose.yml up -d'`.
+
+> **The database layer is mid-transition as of 2026-09-27.** Two decisions were
+> reversed and the code has not caught up:
+>
+> - **Deployment**: app + database on a **Linux server**; the operator's browser
+>   is on Windows and reaches the app through **nginx**, which authenticates and
+>   terminates TLS. `APP_BIND_ADDR` stays `127.0.0.1` — nginx is the trust
+>   boundary, not a wider bind. See `Docs/deployment.md`.
+> - **Database**: **PostgreSQL**, chosen before the first migration was written
+>   because a migration cannot be edited later. `src/db/connection.rs` still
+>   builds a `SqlitePool` and `Cargo.toml` still enables `features = ["sqlite"]`.
+>   The full dialect list is in `Docs/data-model.md`.
+>
+> **The code is SQLite; the decision is PostgreSQL.** Do not let either document
+> lie about the other — check the source. Both reversals came from facts that
+> were cheap to verify and expensive to assume, so verify before trusting a
+> documented constraint.
 
 **Read `Docs/codebase.md` before doing anything that touches the code.** It holds the source map, the full config key list, the route table, the error taxonomy, nine load-bearing invariants, and the landmines that have already cost debugging time.
 
