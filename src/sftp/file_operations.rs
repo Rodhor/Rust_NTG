@@ -1,6 +1,6 @@
-use crate::{domain::error::AppError, sftp::helpers};
+use crate::{domain::error::AppError, helpers::file_helpers, sftp::helpers};
 use ssh2::{RenameFlags, Session};
-use std::{default, fs, io::copy, path::Path};
+use std::{fs, io::copy, path::Path};
 
 pub fn upload_file(
     connection: &Session,
@@ -11,7 +11,7 @@ pub fn upload_file(
     let sftp = connection.sftp()?;
 
     let remote_path = helpers::resolve_path(root, requested)?;
-    let staging = helpers::sibling_with_suffix(&remote_path, None);
+    let staging = file_helpers::sibling_with_suffix(&remote_path, None);
 
     let mut src = fs::File::open(local_path)?;
     let mut dst = sftp.create(&staging)?;
@@ -37,7 +37,7 @@ pub fn download_file(
     let sftp = connection.sftp()?;
 
     let remote_path = helpers::resolve_path(root, requested)?;
-    let staging = helpers::sibling_with_suffix(local_path, Some(".part"));
+    let staging = file_helpers::sibling_with_suffix(local_path, Some(".part"));
 
     let mut src = sftp.open(&remote_path)?;
     let mut dst = fs::File::create(&staging)?;

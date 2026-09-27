@@ -18,7 +18,7 @@ pub async fn list(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<ListQuery>,
 ) -> Result<ApiResponse<Vec<FileItem>>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
 
     let items = state
         .sftp
@@ -39,7 +39,7 @@ pub async fn create_dir(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<CreateDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
     state
         .sftp
         .with_session(move |session| create_remote_dir(session, &root, &q.path))
@@ -59,7 +59,7 @@ pub async fn delete_dir(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<DeleteDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
     state
         .sftp
         .with_session(move |session| delete_remote_dir(session, &root, &q.path))

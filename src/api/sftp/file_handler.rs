@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use axum::extract::State;
 use serde::Deserialize;
@@ -7,15 +7,25 @@ use crate::{
     domain::{error::AppError, response::ApiResponse},
     extract::ApiQuery,
     sftp::file_operations::{delete_remote_file, download_file, move_remote_file, upload_file},
+    sftp::helpers,
     state::AppState,
 };
+
+fn local_target(state: &AppState, requested: &str) -> Result<PathBuf, AppError> {
+    if requested.trim().is_empty() {
+        return Err(AppError::InvalidQuery {
+            detail: "local_path must name a file, not a directory".to_string(),
+        });
+    }
+    helpers::resolve_path(&state.config.sftp.local_root_dir, requested)
+}
 
 #[derive(Debug, Deserialize)]
 pub struct UploadQuery {
     #[serde(default)]
-    pub local_path: String,
-    #[serde(default)]
     pub remote_path: String,
+    #[serde(default)]
+    pub local_path: String,
 }
 
 #[tracing::instrument(skip_all, fields(remote_path = %q.remote_path, local_path = %q.local_path))]
@@ -23,13 +33,12 @@ pub async fn upload(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<UploadQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
+    let local_path = local_target(&state, &q.local_path)?;
 
     let final_path = state
         .sftp
-        .with_session(move |session| {
-            upload_file(session, &root, &q.local_path, Path::new(&q.remote_path))
-        })
+        .with_session(move |session| upload_file(session, &root, &q.remote_path, &local_path))
         .await?;
 
     Ok(ApiResponse::new(final_path))
@@ -47,12 +56,12 @@ pub async fn download(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<DownloadQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
+    let local_path = local_target(&state, &q.local_path)?;
+
     let final_path = state
         .sftp
-        .with_session(move |session| {
-            download_file(session, &root, &q.remote_path, Path::new(&q.local_path))
-        })
+        .with_session(move |session| download_file(session, &root, &q.remote_path, &local_path))
         .await?;
 
     Ok(ApiResponse::new(final_path))
@@ -69,7 +78,7 @@ pub async fn delete(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<DeleteFileQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
-    let root = state.config.sftp.root_dir.clone();
+    let root = state.config.sftp.remote_root_dir.clone();
     state
         .sftp
         .with_session(move |session| delete_remote_file(session, &root, &q.path))
@@ -81,31 +90,22 @@ pub async fn delete(
 #[derive(Debug, Deserialize)]
 pub struct MoveFileQuery {
     #[serde(default)]
-    pub from_root: String,
-    #[serde(default)]
     pub from: String,
     #[serde(default)]
-    pub to_root: String,
-    #[serde(default)]
     pub to: String,
+    #[serde(default)]
+    pub overwrite: bool,
 }
 
-#[tracing::instrument(skip_all, fields(from_root = %q.from_root, from = %q.from, to_root = %q.to_root, to = %q.to))]
+#[tracing::instrument(skip_all, fields(from = %q.from, to = %q.to))]
 pub async fn move_remote(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<MoveFileQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
+    let root = state.config.sftp.remote_root_dir.clone();
     let final_path = state
         .sftp
-        .with_session(move |session| {
-            move_remote_file(
-                session,
-                Path::new(&q.from_root),
-                &q.from,
-                Path::new(&q.to_root),
-                &q.to,
-            )
-        })
+        .with_session(move |session| move_remote_file(session, &root, &q.from, &q.to, q.overwrite))
         .await?;
 
     Ok(ApiResponse::new(final_path))
