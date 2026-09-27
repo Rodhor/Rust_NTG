@@ -7,7 +7,7 @@ pub fn upload_file(
     root: &Path,
     requested: &str,
     local_path: &Path,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
     let remote_path = helpers::resolve_path(root, requested)?;
@@ -28,7 +28,7 @@ pub fn upload_file(
         }
     }
 
-    Ok(())
+    Ok(remote_path.to_string_lossy().to_string())
 }
 
 pub fn download_file(
@@ -36,7 +36,7 @@ pub fn download_file(
     root: &Path,
     requested: &str,
     local_path: &Path,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
     let remote_path = helpers::resolve_path(root, requested)?;
@@ -57,11 +57,16 @@ pub fn download_file(
         }
     }
 
-    Ok(())
+    Ok(remote_path.to_string_lossy().to_string())
 }
 
-pub fn delete_remote_file(connection: &Session, remote_path: &Path) -> Result<(), AppError> {
+pub fn delete_remote_file(
+    connection: &Session,
+    root: &Path,
+    remote_path: &str,
+) -> Result<(), AppError> {
     let sftp = connection.sftp()?;
+    let remote_path = helpers::resolve_path(root, remote_path)?;
     sftp.unlink(&remote_path)?;
     Ok(())
 }
@@ -72,7 +77,7 @@ pub fn move_remote_file(
     from: &str,
     to_root: &Path,
     to: &str,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
     let src_path = helpers::resolve_path(from_root, from)?;
@@ -91,5 +96,5 @@ pub fn move_remote_file(
         }
     }
 
-    Ok(())
+    Ok(dst_path.to_string_lossy().to_string())
 }

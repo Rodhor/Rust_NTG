@@ -22,7 +22,8 @@ pub fn dir() -> Router<AppState> {
 
 pub fn file() -> Router<AppState> {
     Router::<AppState>::new()
-        .route("/list", get(file_handler::list))
-        .route("/create", post(file_handler::create_dir))
-        .route("/delete", delete(file_handler::delete_dir))
+        .route("/upload", post(file_handler::upload))
+        .route("/download", post(file_handler::download))
+        .route("/delete", delete(file_handler::delete))
+        .route("/move", post(file_handler::move_remote))
 }
