@@ -51,8 +51,11 @@ impl Config {
         if s.connect_timeout_secs == 0 {
             return bad("SFTP_CONNECT_TIMEOUT_SECS must be greater than 0");
         }
-        if s.root_dir.to_string_lossy().is_empty() {
-            return bad("SFTP_ROOT_DIR must not be empty");
+        if s.remote_root_dir.to_string_lossy().is_empty() {
+            return bad("SFTP_REMOTE_ROOT_DIR must not be empty");
+        }
+        if s.local_root_dir.to_string_lossy().is_empty() {
+            return bad("SFTP_LOCAL_ROOT_DIR must not be empty");
         }
 
         Ok(())
@@ -169,7 +172,8 @@ impl std::fmt::Debug for SftpConfig {
             .field("host_key_sha256", &self.host_key_sha256)
             .field("connect_timeout_secs", &self.connect_timeout_secs)
             .field("pool_size", &self.pool_size)
-            .field("root_dir", &self.root_dir)
+            .field("remote_root_dir", &self.remote_root_dir)
+            .field("local_root_dir", &self.local_root_dir)
             .field("in_dir", &self.in_dir)
             .field("out_dir", &self.out_dir)
             .field("archive_dir", &self.archive_dir)
@@ -201,7 +205,8 @@ pub struct SftpConfig {
     pub connect_timeout_secs: u64,
     #[serde(default = "default_pool_size")]
     pub pool_size: usize,
-    pub root_dir: PathBuf,
+    pub remote_root_dir: PathBuf,
+    pub local_root_dir: PathBuf,
     #[serde(default)]
     pub in_dir: Option<PathBuf>,
     #[serde(default)]
