@@ -1,6 +1,8 @@
 use axum::{Router, extract::State, middleware, routing::get};
 
 use crate::{
+    api::csv,
+    api::operations,
     api::sftp,
     domain::{error::AppError, health::Health, response::ApiResponse},
     middleware::log_requests,
@@ -18,6 +20,8 @@ pub fn v1_router() -> Router<AppState> {
     Router::<AppState>::new()
         .route("/health", get(health))
         .nest("/sftp", sftp::router::router())
+        .nest("/csv", csv::router::router())
+        .nest("/operations", operations::router::router())
 }
 
 #[tracing::instrument(skip_all)]
