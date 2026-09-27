@@ -17,7 +17,7 @@ pub fn build_router(state: AppState) -> Router {
 pub fn v1_router() -> Router<AppState> {
     Router::<AppState>::new()
         .route("/health", get(health))
-        .route("/sftp/list", get(sftp::list))
+        .nest("/sftp", sftp::router::router())
 }
 
 #[tracing::instrument(skip_all)]
