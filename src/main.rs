@@ -24,9 +24,10 @@ async fn main() -> Result<(), AppError> {
 
     let _guard = logging::init(&config.log)?;
 
+    let sftp = Arc::new(SessionPool::new(config.sftp.clone()));
     let app = router::build_router(AppState {
         config: config.clone(),
-        sftp: Arc::new(SessionPool::new(config.sftp.clone())),
+        sftp: sftp.clone(),
     });
     let addr = &config.app.bind_addr;
 
@@ -37,6 +38,8 @@ async fn main() -> Result<(), AppError> {
         .with_graceful_shutdown(shutdown::shutdown_signal())
         .await?;
 
+    // Disconnect all SFTP sessions
+    sftp.disconnect_all().await;
     tracing::info!("server stopped");
     Ok(())
 }

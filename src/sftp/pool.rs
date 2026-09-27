@@ -4,7 +4,7 @@ use tokio::sync::{Mutex, Semaphore};
 
 use crate::{
     domain::{config_model::SftpConfig, error::AppError},
-    sftp::connection::connect_blocking,
+    sftp::connection::{connect_blocking, disconnect_blocking},
 };
 
 pub struct SessionPool {
@@ -58,6 +58,16 @@ impl SessionPool {
             // The task panicked, so `session` was dropped during unwind and
             // the connection is already closed. The next checkout reconnects.
             Err(e) => Err(AppError::SpawnBlocking(e)),
+        }
+    }
+
+    pub async fn disconnect_all(&self) {
+        let sessions: Vec<Session> = std::mem::take(&mut *self.free.lock().await);
+
+        for session in sessions {
+            if let Err(e) = disconnect_blocking(session).await {
+                tracing::warn!(error = %e, "failed to disconnect sftp session")
+            }
         }
     }
 }
