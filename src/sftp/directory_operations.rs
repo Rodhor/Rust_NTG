@@ -44,13 +44,16 @@ pub fn list_dir(
 
     Ok(files)
 }
-pub fn create_remote_dir(connection: &Session, path: PathBuf) -> Result<(), AppError> {
+pub fn create_remote_dir(connection: &Session, root: &Path, path: &str) -> Result<(), AppError> {
+    let new_dir = helpers::resolve_path(root, path)?;
     let sftp = connection.sftp()?;
-    sftp.mkdir(&path, 0o755)?;
+    sftp.mkdir(&new_dir, 0o755)?;
     Ok(())
 }
-pub fn delete_remote_dir(connection: &Session, path: PathBuf) -> Result<(), AppError> {
+
+pub fn delete_remote_dir(connection: &Session, root: &Path, path: &str) -> Result<(), AppError> {
+    let remote_dir = helpers::resolve_path(root, path)?;
     let sftp = connection.sftp()?;
-    sftp.rmdir(&path)?;
+    sftp.rmdir(&remote_dir)?;
     Ok(())
 }
