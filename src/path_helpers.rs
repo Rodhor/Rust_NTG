@@ -1,4 +1,4 @@
-use crate::domain::error::AppError;
+use crate::domain::{config_model::ConfigError, error::AppError};
 use std::path::{Component, Path, PathBuf};
 
 pub fn require_path(requested: &str) -> Result<(), AppError> {
@@ -50,4 +50,10 @@ pub fn resolve_path(root: &Path, requested: &str) -> Result<PathBuf, AppError> {
             acc.push(n);
             acc
         }))
+}
+
+pub fn to_path_str(dir: Option<&Path>, key: &str) -> Result<String, AppError> {
+    dir.and_then(Path::to_str)
+        .map(str::to_owned)
+        .ok_or_else(|| ConfigError::Invalid(format!("{key} must be set and valid UTF-8")).into())
 }

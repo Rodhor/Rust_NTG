@@ -18,6 +18,7 @@ pub fn dir() -> Router<AppState> {
         .route("/list", get(dir_handler::list))
         .route("/create", post(dir_handler::create_dir))
         .route("/delete", delete(dir_handler::delete_dir))
+        .route("/list_archive", get(dir_handler::list_archive))
 }
 
 pub fn file() -> Router<AppState> {
@@ -26,4 +27,5 @@ pub fn file() -> Router<AppState> {
         .route("/download", post(file_handler::download))
         .route("/delete", delete(file_handler::delete))
         .route("/move", post(file_handler::move_remote))
+        .route("/archive", post(file_handler::archive))
 }

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use axum::extract::State;
 use serde::Deserialize;
@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::{
     domain::{error::AppError, response::ApiResponse},
     extract::ApiQuery,
-    path_helpers,
+    path_helpers::{self},
     sftp::file_operations::{delete_remote_file, download_file, move_remote_file, upload_file},
     state::AppState,
 };
@@ -107,6 +107,34 @@ pub async fn move_remote(
     let final_path = state
         .sftp
         .with_session(move |session| move_remote_file(session, &root, &q.from, &q.to, q.overwrite))
+        .await?;
+
+    Ok(ApiResponse::new(final_path))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ArchiveFileQuery {
+    #[serde(default)]
+    pub file_path: String,
+    #[serde(default)]
+    pub overwrite: bool,
+}
+
+#[tracing::instrument(skip_all, fields(remote_path = %q.file_path, overwrite = %q.overwrite))]
+pub async fn archive(
+    State(state): State<AppState>,
+    ApiQuery(q): ApiQuery<ArchiveFileQuery>,
+) -> Result<ApiResponse<String>, AppError> {
+    path_helpers::require_path(&q.file_path)?;
+    let root = state.config.sftp.remote_root_dir.clone();
+    let archive =
+        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "STFP_ARCHIVE_DIR")?;
+
+    let final_path = state
+        .sftp
+        .with_session(move |session| {
+            move_remote_file(session, &root, &q.file_path, &archive, q.overwrite)
+        })
         .await?;
 
     Ok(ApiResponse::new(final_path))

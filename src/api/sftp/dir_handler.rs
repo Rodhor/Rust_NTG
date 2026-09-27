@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use axum::extract::State;
 use serde::Deserialize;
 
@@ -69,4 +71,19 @@ pub async fn delete_dir(
         .await?;
 
     Ok(ApiResponse::new(()))
+}
+
+#[tracing::instrument(skip_all)]
+pub async fn list_archive(
+    State(state): State<AppState>,
+) -> Result<ApiResponse<Vec<FileItem>>, AppError> {
+    let root = state.config.sftp.remote_root_dir.clone();
+    let archive =
+        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "STFP_ARCHIVE_DIR")?;
+    let items = state
+        .sftp
+        .with_session(move |session| list_dir(session, &root, &archive, true))
+        .await?;
+
+    Ok(ApiResponse::new(items))
 }
