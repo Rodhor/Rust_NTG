@@ -1,8 +1,9 @@
-use axum::extract::{Query, State};
+use axum::extract::State;
 use serde::Deserialize;
 
 use crate::{
     domain::{error::AppError, file_item::FileItem, response::ApiResponse},
+    extract::ApiQuery,
     sftp::directory_operations::{create_remote_dir, delete_remote_dir, list_dir},
     state::AppState,
 };
@@ -15,7 +16,7 @@ pub struct ListQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.path))]
 pub async fn list(
     State(state): State<AppState>,
-    Query(q): Query<ListQuery>,
+    ApiQuery(q): ApiQuery<ListQuery>,
 ) -> Result<ApiResponse<Vec<FileItem>>, AppError> {
     let root = state.config.sftp.root_dir.clone();
 
@@ -36,7 +37,7 @@ pub struct CreateDirQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.path))]
 pub async fn create_dir(
     State(state): State<AppState>,
-    Query(q): Query<CreateDirQuery>,
+    ApiQuery(q): ApiQuery<CreateDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
     let root = state.config.sftp.root_dir.clone();
     state
@@ -56,7 +57,7 @@ pub struct DeleteDirQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.path))]
 pub async fn delete_dir(
     State(state): State<AppState>,
-    Query(q): Query<DeleteDirQuery>,
+    ApiQuery(q): ApiQuery<DeleteDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
     let root = state.config.sftp.root_dir.clone();
     state

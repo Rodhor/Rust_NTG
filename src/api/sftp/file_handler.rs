@@ -1,10 +1,11 @@
 use std::path::Path;
 
-use axum::extract::{Query, State};
+use axum::extract::State;
 use serde::Deserialize;
 
 use crate::{
     domain::{error::AppError, response::ApiResponse},
+    extract::ApiQuery,
     sftp::file_operations::{delete_remote_file, download_file, move_remote_file, upload_file},
     state::AppState,
 };
@@ -20,7 +21,7 @@ pub struct UploadQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.remote_path, local_path = %q.local_path))]
 pub async fn upload(
     State(state): State<AppState>,
-    Query(q): Query<UploadQuery>,
+    ApiQuery(q): ApiQuery<UploadQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
     let root = state.config.sftp.root_dir.clone();
 
@@ -44,7 +45,7 @@ pub struct DownloadQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.remote_path, local_path = %q.local_path))]
 pub async fn download(
     State(state): State<AppState>,
-    Query(q): Query<DownloadQuery>,
+    ApiQuery(q): ApiQuery<DownloadQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
     let root = state.config.sftp.root_dir.clone();
     let final_path = state
@@ -66,7 +67,7 @@ pub struct DeleteFileQuery {
 #[tracing::instrument(skip_all, fields(remote_path = %q.path))]
 pub async fn delete(
     State(state): State<AppState>,
-    Query(q): Query<DeleteFileQuery>,
+    ApiQuery(q): ApiQuery<DeleteFileQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
     let root = state.config.sftp.root_dir.clone();
     state
@@ -92,7 +93,7 @@ pub struct MoveFileQuery {
 #[tracing::instrument(skip_all, fields(from_root = %q.from_root, from = %q.from, to_root = %q.to_root, to = %q.to))]
 pub async fn move_remote(
     State(state): State<AppState>,
-    Query(q): Query<MoveFileQuery>,
+    ApiQuery(q): ApiQuery<MoveFileQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
     let final_path = state
         .sftp
