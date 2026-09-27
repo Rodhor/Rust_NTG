@@ -1,5 +1,5 @@
 use crate::{domain::error::AppError, helpers::file_helpers, sftp::helpers};
-use ssh2::{RenameFlags, Session};
+use ssh2::{OpenFlags, OpenType, RenameFlags, Session};
 use std::{fs, io::copy, path::Path};
 
 pub fn upload_file(
@@ -14,11 +14,16 @@ pub fn upload_file(
     let staging = file_helpers::sibling_with_suffix(&remote_path, None);
 
     let mut src = fs::File::open(local_path)?;
-    let mut dst = sftp.create(&staging)?;
+    let mut dst = sftp.open_mode(
+        &staging,
+        OpenFlags::WRITE | OpenFlags::EXCLUSIVE,
+        0o644,
+        OpenType::File,
+    )?;
 
     if let Err(e) = copy(&mut src, &mut dst) {
         drop(dst);
-        sftp.unlink(&staging)?;
+        let _ = sftp.unlink(&staging);
         return Err(e.into());
     }
 
@@ -40,11 +45,14 @@ pub fn download_file(
     let staging = file_helpers::sibling_with_suffix(local_path, Some(".part"));
 
     let mut src = sftp.open(&remote_path)?;
-    let mut dst = fs::File::create(&staging)?;
+    let mut dst = fs::File::options()
+        .write(true)
+        .create_new(true)
+        .open(&staging)?;
 
     if let Err(e) = copy(&mut src, &mut dst) {
         drop(dst);
-        fs::remove_file(&staging)?;
+        let _ = fs::remove_file(&staging);
         return Err(e.into());
     }
 
