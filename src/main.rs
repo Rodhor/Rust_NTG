@@ -6,6 +6,7 @@ use std::sync::Arc;
 mod api;
 mod config;
 mod csv;
+mod db;
 mod domain;
 mod extract;
 mod logging;
@@ -25,9 +26,11 @@ async fn main() -> Result<(), AppError> {
     let _guard = logging::init(&config.log)?;
 
     let sftp = Arc::new(SessionPool::new(config.sftp.clone()));
+    let db_pool = db::connection::connect(&config.database).await?;
     let app = router::build_router(AppState {
         config: config.clone(),
         sftp: sftp.clone(),
+        db_pool: db_pool.clone(),
     });
     let addr = &config.app.bind_addr;
 
@@ -40,6 +43,9 @@ async fn main() -> Result<(), AppError> {
 
     // Disconnect all SFTP sessions
     sftp.disconnect_all().await;
+
+    // Close the database connection
+    db_pool.close().await;
     tracing::info!("server stopped");
     Ok(())
 }

@@ -28,6 +28,8 @@ impl Config {
 
     fn validate(&self) -> Result<(), ConfigError> {
         let s = &self.sftp;
+        let db = &self.database;
+        let app = &self.app;
         let bad = |m: &str| Err(ConfigError::Invalid(m.to_string()));
 
         if s.host.trim().is_empty() {
@@ -57,7 +59,12 @@ impl Config {
         if s.local_root_dir.to_string_lossy().is_empty() {
             return bad("SFTP_LOCAL_ROOT_DIR must not be empty");
         }
-
+        if db.url.to_string().is_empty() {
+            return bad("DATABASE_URL must not be empty");
+        }
+        if app.name.to_string().is_empty() {
+            return bad("APP_NAME must not be empty");
+        }
         Ok(())
     }
 }
@@ -147,12 +154,9 @@ impl FromEnv for DatabaseConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
-    #[serde(default)]
     pub url: String,
     #[serde(default)]
-    pub pool_size: Option<usize>,
-    #[serde(default)]
-    pub max_connections: Option<usize>,
+    pub max_connections: Option<u32>,
 }
 
 // =========== SFTP CONFIG ===============

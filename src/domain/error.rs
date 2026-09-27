@@ -48,6 +48,12 @@ pub enum AppError {
 
     #[error("invalid query: {detail:?}")]
     InvalidQuery { detail: String },
+
+    #[error("database error: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("migration error: {0}")]
+    Migration(#[from] sqlx::migrate::MigrateError),
 }
 
 impl AppError {
@@ -64,6 +70,8 @@ impl AppError {
             AppError::HostKeyMismatch { .. } => StatusCode::BAD_GATEWAY,
             AppError::PathEscapesRoot { .. } => StatusCode::BAD_REQUEST,
             AppError::InvalidQuery { .. } => StatusCode::BAD_REQUEST,
+            AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Migration(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -80,6 +88,8 @@ impl AppError {
             AppError::HostKeyMismatch { .. } => "HOST_KEY_MISMATCH",
             AppError::PathEscapesRoot { .. } => "PATH_ESCAPES_ROOT",
             AppError::InvalidQuery { .. } => "INVALID_QUERY",
+            AppError::Database(_) => "DATABASE_ERROR",
+            AppError::Migration(_) => "MIGRATION_ERROR",
         }
     }
 }
