@@ -1,8 +1,7 @@
 use crate::{domain::error::AppError, sftp::helpers};
 use ssh2::{RenameFlags, Session};
-use std::path::Path;
+use std::{io::copy, path::Path};
 
-//TODO: Add tmp and then rename
 pub fn upload_file(
     connection: &Session,
     root: &Path,
@@ -10,14 +9,28 @@ pub fn upload_file(
     local_path: &Path,
 ) -> Result<(), AppError> {
     let sftp = connection.sftp()?;
-    let mut local_file = std::fs::File::open(&local_path)?;
+
     let remote_path = helpers::resolve_path(root, requested)?;
-    let mut remote_file = sftp.create(&remote_path)?;
-    std::io::copy(&mut local_file, &mut remote_file)?;
+    let mut src = std::fs::File::open(&local_path)?;
+
+    let mut dst = sftp.create(&remote_path.join(".tmp"))?;
+    match copy(&mut src, &mut dst) {
+        Ok(_) => {
+            sftp.rename(
+                &remote_path.join(".tmp"),
+                &remote_path,
+                Some(RenameFlags::empty()),
+            )?;
+        }
+        Err(e) => {
+            sftp.unlink(&remote_path.join(".tmp"))?;
+            return Err(e.into());
+        }
+    }
+
     Ok(())
 }
 
-//TODO: Add tmp and then rename
 pub fn download_file(
     connection: &Session,
     root: &Path,
@@ -25,10 +38,25 @@ pub fn download_file(
     local_path: &Path,
 ) -> Result<(), AppError> {
     let sftp = connection.sftp()?;
+
     let remote_path = helpers::resolve_path(root, requested)?;
-    let mut remote_file = sftp.open(&remote_path)?;
-    let mut local_file = std::fs::File::create(&local_path)?;
-    std::io::copy(&mut remote_file, &mut local_file)?;
+    let mut src = sftp.open(&remote_path)?;
+
+    let mut dst = std::fs::File::create(&local_path.join("tmp"))?;
+    match copy(&mut src, &mut dst) {
+        Ok(_) => {
+            sftp.rename(
+                &local_path.join("tmp"),
+                &local_path,
+                Some(RenameFlags::empty()),
+            )?;
+        }
+        Err(e) => {
+            sftp.unlink(&local_path.join(".tmp"))?;
+            return Err(e.into());
+        }
+    }
+
     Ok(())
 }
 
@@ -38,7 +66,6 @@ pub fn delete_remote_file(connection: &Session, remote_path: &Path) -> Result<()
     Ok(())
 }
 
-//TODO: Add tmp and then rename
 pub fn move_remote_file(
     connection: &Session,
     from_root: &Path,
@@ -47,8 +74,22 @@ pub fn move_remote_file(
     to: &str,
 ) -> Result<(), AppError> {
     let sftp = connection.sftp()?;
-    let src = helpers::resolve_path(from_root, from)?;
-    let dst = helpers::resolve_path(to_root, to)?;
-    sftp.rename(&src, &dst, Some(RenameFlags::ATOMIC))?; // Error if file already exists
+
+    let src_path = helpers::resolve_path(from_root, from)?;
+    let mut src = std::fs::File::open(&src_path)?;
+
+    let dst_path = helpers::resolve_path(to_root, to)?;
+    let mut dst = std::fs::File::create(&dst_path.join("tmp"))?;
+
+    match copy(&mut src, &mut dst) {
+        Ok(_) => {
+            sftp.rename(&dst_path.join("tmp"), &dst_path, Some(RenameFlags::empty()))?;
+        }
+        Err(e) => {
+            sftp.unlink(&dst_path.join("tmp"))?;
+            return Err(e.into());
+        }
+    }
+
     Ok(())
 }

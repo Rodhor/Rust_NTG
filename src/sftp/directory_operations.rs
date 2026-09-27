@@ -1,5 +1,5 @@
 use ssh2::Session;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::{
     domain::{error::AppError, file_item::FileItem},
