@@ -6,6 +6,11 @@
 > This folder has two kinds of document: **Current** — decisions in force, to be
 > followed and referenced during implementation. **Deferred** — forward-looking
 > notes about things explicitly *not* being built now.
+>
+> **Start with [codebase.md](codebase.md)** if you need to find your way around
+> the actual code. It maps the source tree, configuration, routes, error taxonomy,
+> invariants, and known landmines. This document answers *why*; that one answers
+> *where*.
 
 ## Current — decisions in force
 
@@ -14,6 +19,7 @@ and the alternatives that were rejected.
 
 | Doc | Topic | Summary |
 | --- | --- | --- |
+| [codebase.md](codebase.md) | Where the code is, and what must not break | Source map, config keys, routes, error taxonomy, nine load-bearing invariants, and the landmines that already cost debugging time. Updated as the code changes. |
 | [deployment.md](deployment.md) | Where it runs, how it is built | Everything runs on the Windows VM: backend, DB, files, UI. On-demand, not a service. Import must catch up, never assume "today's file". Build and delivery route is **deferred** to roadmap Phase 9; development and testing are Linux-only until then. |
 | [data-model.md](data-model.md) | Schema and storage | SQLite, five tables. `items` uses a UUID primary key with `ean`/`sku` as indexed columns plus partial unique indexes, because the natural key is undecided. Operational state in columns, source data in one JSON blob per item — the blob is the archive that lets a newly added field be derived later without re-fetching from a transient remote file. The cleaned projection is never stored. WAL mode from day one. |
 | [field-mapping.md](field-mapping.md) | Vocabulary, rules, hashing | The split that resolves the central tension: **the ERP header vocabulary is a Rust enum, the instance configuration is database rows.** Headers are emitted from `ErpField::header()` and are never stored, so they cannot be wrong. The user edits which source column feeds which slot, with which ops, in which order. Ops are a closed typed enum — no parser, no `eval`. Hashes are over `\x1f`-separated `(ntg, value)` pairs in slot order, which avoids both map-order nondeterminism and concatenation ambiguity. |

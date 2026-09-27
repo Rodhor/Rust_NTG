@@ -6,16 +6,14 @@ A Rust web application (v0.1.0) built with Axum that provides a REST API for man
 
 ## Current State
 
-Single crate (`rust-ntg`, edition 2024, axum 0.8). Bootstrapped server skeleton:
+Single crate (`rust-ntg`, edition 2024, axum 0.8, ssh2 0.9), ~1230 lines, 10 direct dependencies. **Phase 1 of 9 in progress** — see `Docs/roadmap.md`.
 
-- **main**: dotenv → config load → logging init → state → router → bind → `axum::serve` with graceful shutdown; returns `AppError`
-- **config**: `.env` via `dotenv` + `envy`; `domain/config_model.rs` holds typed prefixed config blocks (`Config { app, log, sftp, database }`)
-- **logging**: `logging.rs` — `tracing` + `tracing-subscriber` + `tracing-appender`; level/target/format driven by `LogConfig`
-- **domain**: `config_model`, `error` (`AppError` + `ErrorBody`), `response` (`ApiResponse`, `Paginated`), `health`
-- **router**: `build_router(state)` → `GET /api/v1/health`
-- **state**: `AppState { config: Config }`
-- **shutdown**: ctrl+c triggers graceful shutdown (drains in-flight requests)
-- **extract / middleware / sftp / csv**: empty stubs; filled in as features land
+- **Done**: server bootstrap, config/logging, error envelope, `ApiQuery` extractor, SFTP connection with host-key pinning, a 2-session `SessionPool`, all 8 SFTP endpoints (3 directory, 5 file), path safety, graceful shutdown including SFTP disconnect.
+- **Not started**: database (`src/db/mod.rs` is empty; `sqlx`, `csv`, `sha2`, `uuid` are not yet dependencies), CSV handling, frontend.
+- `cargo build` emits **6 warnings, all expected** — unused `DatabaseConfig` fields and unused `Paginated`/`Pagination`, both waiting on later phases. Do not "fix" them by deleting the types; they are consumed later.
+- A throwaway SFTP server for development lives in `docker/`. Start it with `newgrp docker -c 'docker compose -f docker/docker-compose.yml up -d'`.
+
+**Read `Docs/codebase.md` before doing anything that touches the code.** It holds the source map, the full config key list, the route table, the error taxonomy, nine load-bearing invariants, and the landmines that have already cost debugging time.
 
 ## Development Approach
 
@@ -36,7 +34,18 @@ This project is **a learning exercise** — the user wants to understand the con
 
 - Question requests that aren't strictly needed now: is it needed, or can it wait?
 - If a feature is deferred, record it in `Docs/` (with a summary in `Docs/overview.md`) for later evaluation — do not build it now.
-- `Docs/` holds two kinds of document, distinguished by their status line: **In force** (decisions to follow and reference) and **Deferred / Superseded** (forward-looking, not current requirements). Start at `Docs/overview.md`, then `Docs/roadmap.md` for the phase plan and `Docs/open-decisions.md` for anything still undecided.
+- `Docs/` holds three kinds of document, distinguished by their status line: **In force** (decisions to follow and reference), **Deferred / Superseded** (forward-looking, not current requirements), and **Living** (maps of the code as it actually is). Start at `Docs/codebase.md` for orientation, then `Docs/overview.md` for why, then `Docs/roadmap.md` for the phase plan and `Docs/open-decisions.md` for anything still undecided.
+
+## SFTP Path Safety
+
+The SFTP layer is the security boundary of this project. Before changing anything
+in `path_helpers.rs`, `sftp/file_operations.rs`, or a file handler, read the
+Invariants section of `Docs/codebase.md`. The short version:
+
+- **Client input becomes a path only through `path_helpers`.** Never `join`, `push`, or concatenate a query parameter onto a root. `resolve_path` rejects absolute paths and any component that is not `Normal` or `CurDir`.
+- **`require_path` guards every remote path field** except `dir/list`. `resolve_path` maps `""` to the root, which is correct for listing and wrong everywhere else — an upload's temp sibling would land *outside* the root, and `dir/delete` would `rmdir` the root.
+- **Never call `sftp.*` on a local path, or `std::fs` on a remote path.** This has been gotten wrong in both directions and failed silently both times.
+- **The remote root is never client-supplied.** It comes from `SFTP_REMOTE_ROOT_DIR`. A handler that accepts a root as a parameter is a jail escape.
 
 ## Communication Style
 
