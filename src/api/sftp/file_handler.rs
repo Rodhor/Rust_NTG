@@ -128,7 +128,7 @@ pub async fn archive(
     path_helpers::require_path(&q.file_path)?;
     let root = state.config.sftp.remote_root_dir.clone();
     let archive =
-        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "STFP_ARCHIVE_DIR")?;
+        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "SFTP_ARCHIVE_DIR")?;
 
     let final_path = state
         .sftp

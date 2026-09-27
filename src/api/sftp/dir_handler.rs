@@ -77,7 +77,7 @@ pub async fn list_archive(
 ) -> Result<ApiResponse<Vec<FileItem>>, AppError> {
     let root = state.config.sftp.remote_root_dir.clone();
     let archive =
-        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "STFP_ARCHIVE_DIR")?;
+        path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "SFTP_ARCHIVE_DIR")?;
     let items = state
         .sftp
         .with_session(move |session| list_dir(session, &root, &archive, true))
