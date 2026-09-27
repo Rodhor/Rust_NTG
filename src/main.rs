@@ -8,6 +8,7 @@ mod config;
 mod csv;
 mod domain;
 mod extract;
+mod helpers;
 mod logging;
 mod middleware;
 mod router;
@@ -19,6 +20,7 @@ mod state;
 async fn main() -> Result<(), AppError> {
     dotenvy::dotenv()?;
     let config = config::load_config()?;
+    std::fs::create_dir_all(&config.sftp.local_root_dir)?;
 
     let _guard = logging::init(&config.log)?;
 

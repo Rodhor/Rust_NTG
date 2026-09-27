@@ -59,7 +59,7 @@ impl AppError {
             AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Logging(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Dotenv(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Ssh2(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Ssh2(_) => StatusCode::BAD_GATEWAY,
             AppError::SpawnBlocking(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::HostKeyMismatch { .. } => StatusCode::BAD_GATEWAY,
             AppError::PathEscapesRoot { .. } => StatusCode::BAD_REQUEST,
