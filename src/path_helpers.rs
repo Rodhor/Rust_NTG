@@ -1,6 +1,21 @@
+use crate::domain::error::AppError;
 use std::path::{Component, Path, PathBuf};
 
-use crate::domain::error::AppError;
+pub fn require_path(requested: &str) -> Result<(), AppError> {
+    if requested.trim().is_empty() {
+        return Err(AppError::InvalidQuery {
+            detail: "path must not be empty".to_string(),
+        });
+    }
+    Ok(())
+}
+
+pub fn sibling_with_suffix(path: &Path, suffix: Option<&str>) -> PathBuf {
+    let name = path.file_name().unwrap_or_default().to_string_lossy();
+    let suffix = suffix.unwrap_or(".tmp");
+
+    path.with_file_name(format!("{name}{suffix}"))
+}
 
 pub fn resolve_path(root: &Path, requested: &str) -> Result<PathBuf, AppError> {
     let escapes = || AppError::PathEscapesRoot {

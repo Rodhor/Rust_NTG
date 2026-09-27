@@ -4,6 +4,7 @@ use serde::Deserialize;
 use crate::{
     domain::{error::AppError, file_item::FileItem, response::ApiResponse},
     extract::ApiQuery,
+    path_helpers,
     sftp::directory_operations::{create_remote_dir, delete_remote_dir, list_dir},
     state::AppState,
 };
@@ -39,6 +40,7 @@ pub async fn create_dir(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<CreateDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
+    path_helpers::require_path(&q.path)?;
     let root = state.config.sftp.remote_root_dir.clone();
     state
         .sftp
@@ -59,6 +61,7 @@ pub async fn delete_dir(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<DeleteDirQuery>,
 ) -> Result<ApiResponse<()>, AppError> {
+    path_helpers::require_path(&q.path)?;
     let root = state.config.sftp.remote_root_dir.clone();
     state
         .sftp

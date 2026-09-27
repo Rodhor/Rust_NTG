@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::{
     domain::{error::AppError, file_item::FileItem},
-    sftp::helpers,
+    path_helpers,
 };
 
 pub fn list_dir(
@@ -12,7 +12,7 @@ pub fn list_dir(
     requested: &str,
     show_hidden: bool,
 ) -> Result<Vec<FileItem>, AppError> {
-    let remote = helpers::resolve_path(root, requested)?;
+    let remote = path_helpers::resolve_path(root, requested)?;
     let sftp = connection.sftp()?;
     let mut files = Vec::new();
 
@@ -45,14 +45,14 @@ pub fn list_dir(
     Ok(files)
 }
 pub fn create_remote_dir(connection: &Session, root: &Path, path: &str) -> Result<(), AppError> {
-    let new_dir = helpers::resolve_path(root, path)?;
+    let new_dir = path_helpers::resolve_path(root, path)?;
     let sftp = connection.sftp()?;
     sftp.mkdir(&new_dir, 0o755)?;
     Ok(())
 }
 
 pub fn delete_remote_dir(connection: &Session, root: &Path, path: &str) -> Result<(), AppError> {
-    let remote_dir = helpers::resolve_path(root, path)?;
+    let remote_dir = path_helpers::resolve_path(root, path)?;
     let sftp = connection.sftp()?;
     sftp.rmdir(&remote_dir)?;
     Ok(())

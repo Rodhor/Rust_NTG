@@ -1,4 +1,4 @@
-use crate::{domain::error::AppError, helpers::file_helpers, sftp::helpers};
+use crate::{domain::error::AppError, path_helpers};
 use ssh2::{OpenFlags, OpenType, RenameFlags, Session};
 use std::{fs, io::copy, path::Path};
 
@@ -10,8 +10,8 @@ pub fn upload_file(
 ) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
-    let remote_path = helpers::resolve_path(root, requested)?;
-    let staging = file_helpers::sibling_with_suffix(&remote_path, None);
+    let remote_path = path_helpers::resolve_path(root, requested)?;
+    let staging = path_helpers::sibling_with_suffix(&remote_path, None);
 
     // clear any leftover staging files in case of a previous upload failure
     let _ = sftp.unlink(&staging);
@@ -47,8 +47,8 @@ pub fn download_file(
 ) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
-    let remote_path = helpers::resolve_path(root, requested)?;
-    let staging = file_helpers::sibling_with_suffix(local_path, Some(".part"));
+    let remote_path = path_helpers::resolve_path(root, requested)?;
+    let staging = path_helpers::sibling_with_suffix(local_path, Some(".part"));
     let mut src = sftp.open(&remote_path)?;
 
     // clear any leftover staging files in case of a previous upload failure
@@ -79,7 +79,7 @@ pub fn delete_remote_file(
     remote_path: &str,
 ) -> Result<(), AppError> {
     let sftp = connection.sftp()?;
-    let remote_path = helpers::resolve_path(root, remote_path)?;
+    let remote_path = path_helpers::resolve_path(root, remote_path)?;
     sftp.unlink(&remote_path)?;
     Ok(())
 }
@@ -93,8 +93,8 @@ pub fn move_remote_file(
 ) -> Result<String, AppError> {
     let sftp = connection.sftp()?;
 
-    let src = helpers::resolve_path(root, from_requested)?;
-    let dst = helpers::resolve_path(root, to_requested)?;
+    let src = path_helpers::resolve_path(root, from_requested)?;
+    let dst = path_helpers::resolve_path(root, to_requested)?;
 
     let flags = if overwrite {
         RenameFlags::OVERWRITE
