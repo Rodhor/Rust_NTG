@@ -3,4 +3,5 @@ app.db
 .env
 /logs
 /docker/logs
-graphify-out/*
+graphify-out/
+/data/
