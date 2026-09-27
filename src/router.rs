@@ -31,6 +31,8 @@ async fn health(State(state): State<AppState>) -> Result<ApiResponse<Health>, Ap
             status: "ok",
             app: state.config.app.name.clone(),
             version: env!("CARGO_PKG_VERSION"),
+            database: Some(state.db_pool.is_closed().to_string()),
+            url: state.config.app.url.clone(),
         },
     })
 }
