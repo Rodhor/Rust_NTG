@@ -6,3 +6,4 @@ app.db
 graphify-out/
 .graphifyignore
 /data/
+.idea
