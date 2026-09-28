@@ -1,10 +1,15 @@
-use axum::{Router, extract::State, middleware, routing::get};
+use axum::{
+    Json, Router,
+    extract::State,
+    http::StatusCode,
+    middleware,
+    response::{IntoResponse, Response},
+    routing::get,
+};
 
 use crate::{
-    api::csv,
-    api::operations,
-    api::sftp,
-    domain::{error::AppError, health::Health, response::ApiResponse},
+    api::{csv, operations, sftp},
+    domain::{health::Health, response::ApiResponse},
     middleware::log_requests,
     state::AppState,
 };
@@ -25,14 +30,29 @@ pub fn v1_router() -> Router<AppState> {
 }
 
 #[tracing::instrument(skip_all)]
-async fn health(State(state): State<AppState>) -> Result<ApiResponse<Health>, AppError> {
-    Ok(ApiResponse {
+async fn health(State(state): State<AppState>) -> Response {
+    let (database, code) = match sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(&state.db_pool)
+        .await
+    {
+        Ok(_) => ("reachable".to_string(), StatusCode::OK),
+        Err(e) => {
+            tracing::warn!(error = %e, "database health probe failed");
+            ("unreachable".to_string(), StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    };
+    let body = ApiResponse {
         data: Health {
-            status: "ok",
+            status: if code == StatusCode::OK {
+                "ok"
+            } else {
+                "degraded"
+            },
             app: state.config.app.name.clone(),
             version: env!("CARGO_PKG_VERSION"),
-            database: Some(state.db_pool.is_closed().to_string()),
+            database: Some(database),
             url: state.config.app.url.clone(),
         },
-    })
+    };
+    (code, Json(body)).into_response()
 }
