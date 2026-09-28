@@ -152,7 +152,16 @@ impl FromEnv for DatabaseConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+impl std::fmt::Debug for DatabaseConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DatabaseConfig")
+            .field("url", &"<redacted>")
+            .field("max_connections", &self.max_connections)
+            .finish()
+    }
+}
+
+#[derive(Clone, Deserialize)]
 pub struct DatabaseConfig {
     pub url: String,
     #[serde(default)]
