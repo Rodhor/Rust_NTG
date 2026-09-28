@@ -1,14 +1,67 @@
-# Local SFTP server for verifying the API.
+# Local SFTP server for verifying the API, and a local PostgreSQL for developing
+# the database layer.
 #
-# Test fixture only. Password auth, host key baked into the image, fixture data
-# checked in. Do not use any of this for a real deployment.
+# Both are test fixtures. Password auth, host key baked into the image, fixture
+# data checked in. Do not use any of this for a real deployment.
 #
-#   docker compose up -d --build      # start
-#   ./fingerprint.sh                  # print the value for SFTP_HOST_KEY_SHA256
-#   docker compose run --rm sftp-client   # poke at it with a real sftp client
-#   docker compose down -v            # stop and discard
+#   docker compose up -d                      # start both
+#   docker compose up -d postgres             # just the database
+#   ./fingerprint.sh                          # print the value for SFTP_HOST_KEY_SHA256
+#   docker compose run --rm sftp-client       # poke at the SFTP server with a real client
+#   docker compose down -v                    # stop and discard
+
+# Local PostgreSQL for developing against the database layer.
+#
+# Test fixture only. It exists so a migration can be written, applied, and thrown
+# away cheaply, and so `cargo sqlx prepare` has a real schema to validate against.
+# Nothing here belongs in a real deployment.
+#
+#   docker compose up -d postgres      # start
+#   docker compose logs -f postgres    # why won't it accept my connection
+#   docker compose down -v             # stop and DISCARD the database
+#
+# The `down -v` matters more here than for the SFTP fixture. The database lives in
+# a volume, so `down` without `-v` keeps a half-migrated schema around and the next
+# `up` inherits it. When a migration goes wrong, `down -v` is the reset.
 
 services:
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      # The superuser, left for administration. The app does NOT use this.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PG_SUPERUSER_PASSWORD:-postgres}
+      # The app's database. The role that owns it is created by the init script
+      # below, not by POSTGRES_USER — see that file for why.
+      POSTGRES_DB: rust_ntg
+    # Bound to loopback, same reasoning as the sftp service above and for the same
+    # reason as Docs/api-bind-address.md: the container has a password and must not
+    # be reachable from the network. The image listens on all interfaces inside the
+    # container, so this host-side binding is the containment.
+    ports:
+      - "127.0.0.1:5432:5432"
+    # Creates the ordinary app role and grants it CREATE on the public schema,
+    # which PostgreSQL 15 removed by default. Runs once, on first start only.
+    #
+    # The mount point is /var/lib/postgresql and NOT /var/lib/postgresql/data.
+    # PostgreSQL 18 stores data in major-version-specific subdirectories under
+    # /var/lib/postgresql so that `pg_upgrade --link` works; mounting the old path
+    # makes the image refuse to start with "there appears to be PostgreSQL data in:
+    # /var/lib/postgresql/data (unused mount/volume)". Verified on postgres:18.
+    # Dropping the volume entirely is also fine for a disposable fixture — the data
+    # lives in the container and disappears with it.
+    volumes:
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/10-role.sql:ro
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rust_ntg"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
+    restart: unless-stopped
+
   sftp:
     build:
       context: .
@@ -45,3 +98,6 @@ services:
     entrypoint: ["/bin/bash"]
     tty: true
     stdin_open: true
+
+volumes:
+  postgres-data:

@@ -1,10 +1,113 @@
+# Local fixtures
+
+Two throwaway containers for developing against this project: a **PostgreSQL**
+to develop the database layer against, and an **SFTP server** to verify the API's
+SFTP path.
+
+Test fixtures only. Nothing here belongs in a real deployment.
+
+---
+
+# PostgreSQL
+
+A throwaway PostgreSQL 18 for writing migrations, running `cargo sqlx prepare`,
+and throwing the whole schema away cheaply.
+
+## Start it
+
+```bash
+cd docker
+docker compose up -d postgres
+```
+
+Wait for healthy (a first start initialises the cluster, so a few seconds):
+
+```bash
+docker compose ps postgres     # STATUS should reach (healthy)
+```
+
+The connection string for your project `.env`:
+
+```
+DATABASE_URL=postgres://rust_ntg:rust-ntg-dev-password@127.0.0.1:5432/rust_ntg
+```
+
+Confirm it from the host before writing any code:
+
+```bash
+psql "$DATABASE_URL" -c 'select current_user, version()'
+```
+
+## The app role is deliberately not a superuser
+
+`postgres-init.sql` runs once, on first start, and creates an **ordinary**
+role. Verified:
+
+```
+rust_ntg|f|f|f|f      -- rolsuper, rolcreatedb, rolcreaterole, rolbypassrls
+```
+
+Pointing the app at `POSTGRES_USER` instead would be simpler and would quietly
+hand the app superuser powers in development. A migration could then use a
+superuser-only feature, pass here, and fail in production where the role is
+ordinary — a fixture that cannot tell those two cases apart. Same reasoning as
+the SFTP section below: make the failure visible.
+
+**The `public` schema grant is load-bearing.** PostgreSQL 15 removed the default
+`CREATE` grant on `public`, so a fresh role fails its first migration with
+`ERROR: permission denied for schema public` — which reads like a bug in the
+migration and is actually a PostgreSQL 15 default. Verified by creating a role
+without the grant and watching it fail.
+
+## Two version-specific traps
+
+Both of these were hit while setting this up, and both fail in ways that do not
+name the cause:
+
+| Trap | Symptom | Fix |
+|---|---|---|
+| Data directory moved in PG 18 | Container refuses to boot: *"there appears to be PostgreSQL data in: /var/lib/postgresql/data (unused mount/volume)"* | Mount the volume at `/var/lib/postgresql`, **not** `.../data` |
+| Init script runs once | Change `postgres-init.sql`, nothing happens | `docker compose down -v` then `up -d` |
+
+## Reset it
+
+```bash
+docker compose down -v      # the -v is what discards the database
+```
+
+`-v` matters more here than for SFTP. A half-applied migration in a volume
+survives a plain `down`, and the next `up` inherits it. If a migration goes
+wrong, `down -v` is the reset.
+
+The volume is disposable by design. Delete the `postgres-data` entry in
+`docker-compose.yml` and the data just lives in the container.
+
+## If the app cannot connect
+
+```bash
+docker compose logs postgres
+```
+
+Three causes, in the order they actually happen:
+
+1. **Not healthy yet** — the first start runs `initdb`. Use
+   `docker compose up -d --wait postgres` to block until it is.
+2. **Wrong password** — the app password is `rust-ntg-dev-password`, hardcoded
+   in `postgres-init.sql`. It is not wired to the compose environment, so
+   changing the compose password will not change it.
+3. **`SQLX_OFFLINE=true` with an empty `.sqlx/`** — the macros read the cache,
+   find nothing, and fail to compile. Unset it until the first
+   `cargo sqlx prepare`.
+
+---
+
 # Local SFTP fixture
 
 A throwaway SFTP server for verifying the four things the API's SFTP path has to
 get right: **host key pinning, authentication, the path jail, and the session
 pool.**
 
-Test fixture only. Password auth, host key baked into the image, a
+Password auth, host key baked into the image, a
 world-readable directory outside the root specifically so a broken jail is
 visible. Nothing here belongs in a real deployment.
 
