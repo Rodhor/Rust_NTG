@@ -1,0 +1,81 @@
+# syntax=docker/dockerfile:1
+#
+# Throwaway SFTP server for verifying the API's SFTP path.
+# NOT production-grade: the host key is generated at BUILD time and baked into
+# the image so the fingerprint is stable across restarts. That is exactly what
+# you want for a test fixture, and exactly what you must never do for a real
+# server.
+#
+# Build args become baked-in values, so changing them requires a rebuild:
+#   docker compose build --no-cache
+
+FROM debian:bookworm-slim
+
+ARG SFTP_USER=dev
+ARG SFTP_PASSWORD=dev-password
+# The jail root. Must match SFTP_ROOT_DIR in your .env.
+ARG ROOT_DIR=/incoming
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssh-server \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir -p /run/sshd
+
+# Generated at build time, not container start, so the fingerprint printed below
+# is the same every time the image exists.
+#
+# The rm is required, not tidy-up: the openssh-server postinst already runs
+# `ssh-keygen -A`, so without it ssh-keygen finds the keys present and prompts
+# to overwrite, which hangs the build.
+RUN rm -f /etc/ssh/ssh_host_* \
+ && ssh-keygen -q -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key \
+ && ssh-keygen -q -t rsa -b 3072 -N '' -f /etc/ssh/ssh_host_rsa_key
+
+# The fingerprint your app pins, printed in the build log so you can copy it
+# without running anything. Same script the host-side fingerprint.sh calls, so
+# the two can't drift apart.
+COPY sftp-fingerprint.sh /usr/local/bin/sftp-fingerprint
+RUN chmod +x /usr/local/bin/sftp-fingerprint \
+ && echo "SFTP_HOST_KEY_SHA256 (copy into your .env):" \
+ && sftp-fingerprint \
+ && echo "  (rsa key: $(sftp-fingerprint /etc/ssh/ssh_host_rsa_key.pub))"
+
+RUN printf '%s\n' \
+      'Port 22' \
+      'HostKey /etc/ssh/ssh_host_ed25519_key' \
+      'HostKey /etc/ssh/ssh_host_rsa_key' \
+      'PidFile /run/sshd.pid' \
+      'PermitRootLogin no' \
+      'PasswordAuthentication yes' \
+      'KbdInteractiveAuthentication no' \
+      'UsePAM no' \
+      'Subsystem sftp internal-sftp' \
+      'TCPKeepAlive yes' \
+      'LogLevel VERBOSE' \
+      > /etc/ssh/sshd_config
+
+# nologin shell: internal-sftp does not use a shell, so a password can never
+# open a terminal. The login shell is irrelevant to the sftp subsystem.
+RUN useradd --create-home --home-dir "/home/${SFTP_USER}" \
+             --shell /usr/sbin/nologin "${SFTP_USER}" \
+ && echo "${SFTP_USER}:${SFTP_PASSWORD}" | chpasswd
+
+# Fixture tree. The point of /srv/sftp-private is that it is world-READABLE:
+# if the app's path jail were broken, a traversal request would succeed and
+# hand back secret.txt. If the jail works, the request is rejected before any
+# server-side permission is consulted. A traversal target that is already
+# unreadable would make a broken jail look identical to a working one.
+RUN mkdir -p "${ROOT_DIR}/subdir" /srv/sftp-private \
+ && printf 'visible file\n'                  > "${ROOT_DIR}/readme.txt" \
+ && printf 'hidden file\n'                   > "${ROOT_DIR}/.hidden" \
+ && printf 'nested file\n'                   > "${ROOT_DIR}/subdir/nested.txt" \
+ && printf 'nested hidden file\n'            > "${ROOT_DIR}/subdir/.hidden-nested" \
+ && printf 'MUST NOT BE REACHABLE\n'         > /srv/sftp-private/secret.txt \
+ && chown -R "${SFTP_USER}:${SFTP_USER}" "${ROOT_DIR}" \
+ && chmod -R 755 "${ROOT_DIR}" /srv/sftp-private
+
+EXPOSE 22
+
+# -D stays in the foreground so compose tracks the process;
+# -e sends sshd's own logging to stderr, so `docker compose logs` shows why auth failed.
+CMD ["/usr/sbin/sshd", "-D", "-e"]

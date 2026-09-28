@@ -1,2 +1,8 @@
 /target
-/app.db*
+app.db
+.env
+/logs
+/docker/logs/
+graphify-out/
+.graphifyignore
+/data/
