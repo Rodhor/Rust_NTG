@@ -67,7 +67,7 @@ logs *args:
 
 # ── SQLx compile-time queries ─────────────────────────────────────────────────
 prepare:
-    sqlx prepare -- --all-targets
+    cargo sqlx prepare -- --all-targets
 
 check:
     SQLX_OFFLINE=true cargo sqlx prepare --check -- --all-targets
