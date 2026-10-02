@@ -24,8 +24,10 @@ fn parse_csv_headers(headers: Vec<StringRecord>) -> Result<Vec<NtgMetadata>, App
 
     for i in 0..names.len() {
         let original_header = normalize_original_header(names.get(i).unwrap_or_default());
-        let (ctype, clength) = parse_ctype_clength(ctype_clength.get(i).unwrap_or_default())
-            .unwrap_or((NtgColumnType::An, None));
+        let (ctype, clength) =
+            parse_ctype_clength(ctype_clength.get(i).ok_or_else(|| AppError::CsvMalformed {
+                detail: format!("no ctype/clength for column {i}"),
+            })?)?;
 
         let required = required
             .get(i)

@@ -1,4 +1,4 @@
-use crate::domain::ntg_column::NtgColumnType;
+use crate::domain::{error::AppError, ntg_column::NtgColumnType};
 
 pub fn normalize_original_header(raw: &str) -> String {
     // trim strip boom and normalize case
@@ -14,13 +14,29 @@ pub fn normalize_ntg_header(raw: &str, index: usize) -> String {
     }
 }
 
-pub fn parse_ctype_clength(raw: &str) -> Option<(NtgColumnType, Option<i32>)> {
-    let split_index = raw.find(|c: char| c.is_ascii_digit()).unwrap_or(0);
-    if split_index == 0 {
-        return None;
-    }
-    let parts: (&str, &str) = raw.split_at(split_index);
-    let ctype = NtgColumnType::from_str(parts.0)?;
-    let clength = parts.1.parse().ok();
-    Some((ctype, clength))
+pub fn parse_ctype_clength(raw: &str) -> Result<(NtgColumnType, Option<i32>), AppError> {
+    let raw = raw.trim();
+    let (ctype_str, clength_str) = match raw.find(|c: char| c.is_ascii_digit()) {
+        Some(i) => raw.split_at(i),
+        None => (raw, ""),
+    };
+
+    let ctype = NtgColumnType::from_str(ctype_str).ok_or_else(|| AppError::CsvMalformed {
+        detail: format!("unknown content type {ctype_str:?}"),
+    })?;
+
+    let clength = if clength_str.is_empty() {
+        None
+    } else {
+        Some(
+            clength_str
+                .trim()
+                .parse::<i32>()
+                .map_err(|_| AppError::CsvMalformed {
+                    detail: format!("invalid content length {clength_str:?}"),
+                })?,
+        )
+    };
+
+    Ok((ctype, clength))
 }

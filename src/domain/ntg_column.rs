@@ -17,7 +17,7 @@ impl NtgColumnType {
     }
 
     pub fn from_str(s: &str) -> Option<Self> {
-        match s {
+        match s.trim().to_ascii_lowercase().as_str() {
             "an" => Some(Self::An),
             "n" => Some(Self::N),
             _ => None,
