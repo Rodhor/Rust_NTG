@@ -1,24 +1,8 @@
-use crate::db::DbPool;
 use crate::domain::error::AppError;
+use crate::{db::DbPool, domain::ntg_column::NtgColumnType};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Type};
+use sqlx::FromRow;
 use time::OffsetDateTime;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[sqlx(type_name = "TEXT", rename_all = "lowercase")]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum NtgColumnType {
-    An,
-    N,
-}
-impl NtgColumnType {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::An => "an",
-            Self::N => "n",
-        }
-    }
-}
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
