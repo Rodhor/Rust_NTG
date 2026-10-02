@@ -38,17 +38,6 @@ pub struct NewNtgHeader {
     pub deprecated: bool,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateNtgHeader {
-    pub ntg_header: Option<String>,
-    pub original_header: Option<String>,
-    pub content_type: Option<NtgColumnType>,
-    pub content_length: Option<i32>,
-    pub required: Option<bool>,
-    pub deprecated: Option<bool>,
-}
-
 pub async fn create(
     pool: &DbPool,
     new: NewNtgHeader,
