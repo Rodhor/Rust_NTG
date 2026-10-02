@@ -54,6 +54,12 @@ pub enum AppError {
 
     #[error("migration error: {0}")]
     Migration(#[from] sqlx::migrate::MigrateError),
+
+    #[error("csv error: {0}")]
+    Csv(#[from] csv::Error),
+
+    #[error("csv error: {detail:?}")]
+    CsvMalformed { detail: String },
 }
 
 impl AppError {
@@ -72,6 +78,8 @@ impl AppError {
             AppError::InvalidQuery { .. } => StatusCode::BAD_REQUEST,
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Migration(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Csv(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            AppError::CsvMalformed { .. } => StatusCode::UNPROCESSABLE_ENTITY,
         }
     }
 
@@ -90,6 +98,8 @@ impl AppError {
             AppError::InvalidQuery { .. } => "INVALID_QUERY",
             AppError::Database(_) => "DATABASE_ERROR",
             AppError::Migration(_) => "MIGRATION_ERROR",
+            AppError::Csv(_) => "CSV_ERROR",
+            AppError::CsvMalformed { .. } => "CSV_MALFORMED",
         }
     }
 }
