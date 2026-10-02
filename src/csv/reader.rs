@@ -1,17 +1,22 @@
-use csv::StringRecord;
+use csv::{StringRecord, StringRecordIter};
 
 use crate::csv::helpers::{normalize_ntg_header, normalize_original_header, parse_ctype_clength};
 use crate::domain::{error::AppError, ntg_column::NtgColumnType, ntg_metadata::NtgMetadata};
 
-fn load_csv(path: &str) -> Result<Vec<NtgMetadata>, AppError> {
+pub fn load_csv(path: &str) -> Result<(Vec<NtgMetadata>, Vec<StringRecord>), AppError> {
     let mut reader = csv::Reader::from_path(path)?;
     let mut records = reader.records();
 
-    let meta: Vec<StringRecord> = records.by_ref().take(4).collect::<Result<_, _>>()?;
+    let header_data: Vec<StringRecord> = records.by_ref().take(4).collect::<Result<_, _>>()?;
+    let headers = parse_csv_headers(header_data)?;
+    let remaining: Vec<StringRecord> = records.collect::<Result<_, _>>()?;
+    Ok((headers, remaining))
+}
 
-    let [names, required, ctype_clength, ntg_header] = meta.as_slice() else {
+fn parse_csv_headers(headers: Vec<StringRecord>) -> Result<Vec<NtgMetadata>, AppError> {
+    let [names, required, ctype_clength, ntg_header] = headers.as_slice() else {
         return Err(AppError::CsvMalformed {
-            detail: format!("expected 4 metadata rows, found {}", meta.len()),
+            detail: format!("expected 4 metadata rows, found {}", headers.len()),
         });
     };
 
@@ -25,7 +30,7 @@ fn load_csv(path: &str) -> Result<Vec<NtgMetadata>, AppError> {
         let required = required
             .get(i)
             .is_some_and(|f| f.trim().eq_ignore_ascii_case("m"));
-        let column_index = Some(i as i32);
+        let column_index = i as i32;
         let ntg_header = ntg_header.get(i).ok_or_else(|| AppError::CsvMalformed {
             detail: format!("no ntg header for column {i}"),
         })?;

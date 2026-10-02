@@ -1,3 +1,4 @@
+use crate::db::DbConnection;
 use crate::domain::error::AppError;
 use crate::{db::DbPool, domain::ntg_column::NtgColumnType};
 use serde::{Deserialize, Serialize};
@@ -17,7 +18,7 @@ pub struct NtgHeader {
 
     // Internal fields
     #[serde(skip_serializing)]
-    pub column_index: Option<i32>,
+    pub column_index: i32,
     #[serde(skip_serializing)]
     pub deleted: bool,
     #[serde(skip_serializing)]
@@ -35,59 +36,10 @@ pub struct NewNtgHeader {
     pub content_type: NtgColumnType,
     pub content_length: Option<i32>,
     pub required: bool,
-    pub deprecated: bool,
+    pub column_index: i32,
 }
 
-pub async fn create(
-    pool: &DbPool,
-    new: NewNtgHeader,
-    column_index: i32,
-) -> sqlx::Result<NtgHeader, AppError> {
-    let row = sqlx::query_as!(
-        NtgHeader,
-        r#"
-    INSERT INTO ntg_headers(
-        ntg_header,
-        original_header,
-        content_type,
-        content_length,
-        column_index,
-        required,
-        deprecated
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING
-        id,
-        ntg_header,
-        original_header,
-        content_type AS "content_type!: NtgColumnType",
-        content_length,
-        column_index,
-        required,
-        deprecated,
-        deleted,
-        created_at,
-        updated_at,
-        deleted_at
-    "#,
-        new.ntg_header,
-        new.original_header,
-        new.content_type.as_str(),
-        new.content_length,
-        column_index,
-        new.required,
-        new.deprecated,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(row)
-}
-
-pub async fn upsert(
-    pool: &DbPool,
-    new: NewNtgHeader,
-    column_index: i32,
-) -> Result<NtgHeader, AppError> {
+pub async fn upsert(conn: &mut DbConnection, new: NewNtgHeader) -> Result<NtgHeader, AppError> {
     let row = sqlx::query_as!(
         NtgHeader,
         r#"
@@ -113,29 +65,45 @@ pub async fn upsert(
         new.original_header,
         new.content_type.as_str(),
         new.content_length,
-        column_index,
+        new.column_index,
         new.required,
     )
-    .fetch_one(pool)
+    .fetch_one(conn)
     .await?;
 
     Ok(row)
 }
 
-pub async fn delete(pool: &DbPool, id: i64) -> sqlx::Result<(), AppError> {
+pub async fn upsert_bulk(
+    pool: &DbPool,
+    rows: Vec<NewNtgHeader>,
+) -> Result<Vec<NtgHeader>, AppError> {
+    let mut tx = pool.begin().await?;
+
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        out.push(upsert(&mut *tx, row).await?);
+    }
+
+    tx.commit().await?;
+
+    Ok(out)
+}
+
+pub async fn delete(pool: &DbPool, id: i64) -> Result<(), AppError> {
     sqlx::query!("DELETE FROM ntg_headers WHERE id = $1", id,)
         .execute(pool)
         .await?;
     Ok(())
 }
 
-pub async fn deprecate(pool: &DbPool, id: i64) -> sqlx::Result<(), AppError> {
+pub async fn deprecate(pool: &DbPool, id: i64) -> Result<(), AppError> {
     sqlx::query!("UPDATE ntg_headers SET deprecated = true WHERE id = $1", id,)
         .execute(pool)
         .await?;
     Ok(())
 }
-pub async fn undeprecate(pool: &DbPool, id: i64) -> sqlx::Result<(), AppError> {
+pub async fn undeprecate(pool: &DbPool, id: i64) -> Result<(), AppError> {
     sqlx::query!(
         "UPDATE ntg_headers SET deprecated = false WHERE id = $1",
         id,
@@ -145,7 +113,7 @@ pub async fn undeprecate(pool: &DbPool, id: i64) -> sqlx::Result<(), AppError> {
     Ok(())
 }
 
-pub async fn get_by_id(pool: &DbPool, id: i64) -> sqlx::Result<NtgHeader, AppError> {
+pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<NtgHeader, AppError> {
     let row = sqlx::query_as!(
         NtgHeader,
         r#"SELECT
@@ -173,7 +141,7 @@ pub async fn get_by_id(pool: &DbPool, id: i64) -> sqlx::Result<NtgHeader, AppErr
     Ok(row)
 }
 
-pub async fn list(pool: &DbPool) -> sqlx::Result<Vec<NtgHeader>, AppError> {
+pub async fn list(pool: &DbPool) -> Result<Vec<NtgHeader>, AppError> {
     let rows = sqlx::query_as!(
         NtgHeader,
         r#"SELECT
@@ -198,10 +166,7 @@ pub async fn list(pool: &DbPool) -> sqlx::Result<Vec<NtgHeader>, AppError> {
     Ok(rows)
 }
 
-pub async fn get_by_ntg_header(
-    pool: &DbPool,
-    ntg_header: &str,
-) -> sqlx::Result<NtgHeader, AppError> {
+pub async fn get_by_ntg_header(pool: &DbPool, ntg_header: &str) -> Result<NtgHeader, AppError> {
     let row = sqlx::query_as!(
         NtgHeader,
         r#"SELECT
