@@ -3,21 +3,27 @@ use axum::{
     routing::{get, post},
 };
 
-use crate::{api::csv::header_handler, state::AppState};
+use crate::{api::csv::column_spec_handler, state::AppState};
 pub fn router() -> Router<AppState> {
     Router::<AppState>::new()
-        .nest("/header", header())
+        .nest("/column-specs", column_specs())
         .nest("/article", article())
 }
 
-pub fn header() -> Router<AppState> {
+pub fn column_specs() -> Router<AppState> {
     Router::<AppState>::new()
-        .route("/get_by_id", get(header_handler::get))
-        .route("/list", get(header_handler::list))
-        .route("/get_by_ntg", get(header_handler::get_ntg_header))
-        .route("/deprecate", post(header_handler::deprecate_header))
-        .route("/undeprecate", post(header_handler::undeprecate_header))
-        .route("/delete", post(header_handler::delete_header))
+        .route("/get_by_id", get(column_spec_handler::get))
+        .route("/list", get(column_spec_handler::list))
+        .route(
+            "/get_by_ntg_header",
+            get(column_spec_handler::get_by_ntg_header),
+        )
+        .route("/deprecate", post(column_spec_handler::deprecate_column))
+        .route(
+            "/undeprecate",
+            post(column_spec_handler::undeprecate_column),
+        )
+        .route("/delete", post(column_spec_handler::delete_column))
 }
 
 pub fn article() -> Router<AppState> {

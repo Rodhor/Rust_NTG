@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS ntg_headers;
+DROP TABLE IF EXISTS ntg_column_specs;

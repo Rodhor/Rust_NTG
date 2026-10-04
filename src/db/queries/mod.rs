@@ -1,1 +1,1 @@
-pub mod ntg_header;
+pub mod column_spec;

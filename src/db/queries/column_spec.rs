@@ -2,12 +2,13 @@ use crate::db::DbConnection;
 use crate::domain::error::AppError;
 use crate::{db::DbPool, domain::ntg_column::NtgColumnType};
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use sqlx::query_as;
+use sqlx::{FromRow, query};
 use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
-pub struct NtgHeader {
+pub struct NtgColumnSpec {
     pub id: i64,
     pub ntg_header: String,
     pub original_header: Option<String>,
@@ -30,7 +31,7 @@ pub struct NtgHeader {
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewNtgHeader {
+pub struct NewNtgColumnSpec {
     pub ntg_header: String,
     pub original_header: Option<String>,
     pub content_type: NtgColumnType,
@@ -39,22 +40,25 @@ pub struct NewNtgHeader {
     pub column_index: i32,
 }
 
-pub async fn upsert(conn: &mut DbConnection, new: NewNtgHeader) -> Result<NtgHeader, AppError> {
-    let row = sqlx::query_as!(
-        NtgHeader,
+pub async fn upsert(
+    conn: &mut DbConnection,
+    new: NewNtgColumnSpec,
+) -> Result<NtgColumnSpec, AppError> {
+    let row = query_as!(
+        NtgColumnSpec,
         r#"
-         INSERT INTO ntg_headers (
+         INSERT INTO ntg_column_specs (
              ntg_header, original_header, content_type,
              content_length, column_index, required
          )
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (ntg_header) DO UPDATE SET
-             original_header = EXCLUDED.original_header,
-             content_type    = EXCLUDED.content_type,
-             content_length  = EXCLUDED.content_length,
-             column_index    = EXCLUDED.column_index,
-             required        = EXCLUDED.required,
-             updated_at      = now()
+             original_header  = EXCLUDED.original_header,
+             content_type   = EXCLUDED.content_type,
+             content_length = EXCLUDED.content_length,
+             column_index   = EXCLUDED.column_index,
+             required       = EXCLUDED.required,
+             updated_at     = now()
          RETURNING
              id, ntg_header, original_header,
              content_type AS "content_type!: NtgColumnType",
@@ -76,8 +80,8 @@ pub async fn upsert(conn: &mut DbConnection, new: NewNtgHeader) -> Result<NtgHea
 
 pub async fn upsert_bulk(
     pool: &DbPool,
-    rows: Vec<NewNtgHeader>,
-) -> Result<Vec<NtgHeader>, AppError> {
+    rows: Vec<NewNtgColumnSpec>,
+) -> Result<Vec<NtgColumnSpec>, AppError> {
     let mut tx = pool.begin().await?;
 
     let mut out = Vec::with_capacity(rows.len());
@@ -91,21 +95,24 @@ pub async fn upsert_bulk(
 }
 
 pub async fn delete(pool: &DbPool, id: i64) -> Result<(), AppError> {
-    sqlx::query!("DELETE FROM ntg_headers WHERE id = $1", id,)
+    query!("DELETE FROM ntg_column_specs WHERE id = $1", id,)
         .execute(pool)
         .await?;
     Ok(())
 }
 
 pub async fn deprecate(pool: &DbPool, id: i64) -> Result<(), AppError> {
-    sqlx::query!("UPDATE ntg_headers SET deprecated = true WHERE id = $1", id,)
-        .execute(pool)
-        .await?;
+    query!(
+        "UPDATE ntg_column_specs SET deprecated = true WHERE id = $1",
+        id,
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 pub async fn undeprecate(pool: &DbPool, id: i64) -> Result<(), AppError> {
-    sqlx::query!(
-        "UPDATE ntg_headers SET deprecated = false WHERE id = $1",
+    query!(
+        "UPDATE ntg_column_specs SET deprecated = false WHERE id = $1",
         id,
     )
     .execute(pool)
@@ -113,9 +120,9 @@ pub async fn undeprecate(pool: &DbPool, id: i64) -> Result<(), AppError> {
     Ok(())
 }
 
-pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<NtgHeader, AppError> {
-    let row = sqlx::query_as!(
-        NtgHeader,
+pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<NtgColumnSpec, AppError> {
+    let row = query_as!(
+        NtgColumnSpec,
         r#"SELECT
             id,
             ntg_header,
@@ -130,7 +137,7 @@ pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<NtgHeader, AppError> {
             updated_at,
             deleted_at
         FROM
-            ntg_headers
+            ntg_column_specs
         WHERE id = $1
         "#,
         id,
@@ -141,9 +148,9 @@ pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<NtgHeader, AppError> {
     Ok(row)
 }
 
-pub async fn list(pool: &DbPool) -> Result<Vec<NtgHeader>, AppError> {
-    let rows = sqlx::query_as!(
-        NtgHeader,
+pub async fn list(pool: &DbPool) -> Result<Vec<NtgColumnSpec>, AppError> {
+    let rows = query_as!(
+        NtgColumnSpec,
         r#"SELECT
             id,
             ntg_header,
@@ -158,7 +165,7 @@ pub async fn list(pool: &DbPool) -> Result<Vec<NtgHeader>, AppError> {
             updated_at,
             deleted_at
         FROM
-            ntg_headers
+            ntg_column_specs
         "#,
     )
     .fetch_all(pool)
@@ -166,9 +173,9 @@ pub async fn list(pool: &DbPool) -> Result<Vec<NtgHeader>, AppError> {
     Ok(rows)
 }
 
-pub async fn get_by_ntg_header(pool: &DbPool, ntg_header: &str) -> Result<NtgHeader, AppError> {
-    let row = sqlx::query_as!(
-        NtgHeader,
+pub async fn get_by_ntg_header(pool: &DbPool, ntg_header: &str) -> Result<NtgColumnSpec, AppError> {
+    let row = query_as!(
+        NtgColumnSpec,
         r#"SELECT
             id,
             ntg_header,
@@ -183,7 +190,7 @@ pub async fn get_by_ntg_header(pool: &DbPool, ntg_header: &str) -> Result<NtgHea
             updated_at,
             deleted_at
         FROM
-            ntg_headers
+            ntg_column_specs
         WHERE ntg_header = $1
         "#,
         ntg_header,

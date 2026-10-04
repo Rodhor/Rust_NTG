@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE ntg_headers SET deprecated = false WHERE id = $1",
+  "query": "UPDATE ntg_column_specs SET deprecated = true WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "2203ab5047f09e20407e9670bc2941f75d257d8d0edeb213558334ec9d0aecf9"
+  "hash": "2d3a17872ffd4ac2d86bac4219cd7cdf0f2d3bb36f7557fe7ee8d9cb98c94cf4"
 }

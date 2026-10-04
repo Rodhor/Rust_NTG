@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS ntg_headers (
+CREATE TABLE IF NOT EXISTS ntg_column_specs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ntg_header VARCHAR(50) NOT NULL,
     original_header VARCHAR(255),

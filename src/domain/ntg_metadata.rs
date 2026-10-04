@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{db::queries::ntg_header::NewNtgHeader, domain::ntg_column::NtgColumnType};
+use crate::{db::queries::column_spec::NewNtgColumnSpec, domain::ntg_column::NtgColumnType};
 
 #[derive(Serialize, Deserialize)]
 pub struct NtgMetadata {
@@ -12,9 +12,9 @@ pub struct NtgMetadata {
     pub column_index: i32,
 }
 
-impl From<NtgMetadata> for NewNtgHeader {
+impl From<NtgMetadata> for NewNtgColumnSpec {
     fn from(m: NtgMetadata) -> Self {
-        NewNtgHeader {
+        NewNtgColumnSpec {
             ntg_header: m.ntg_header,
             original_header: Some(m.original_header),
             content_type: m.content_type,

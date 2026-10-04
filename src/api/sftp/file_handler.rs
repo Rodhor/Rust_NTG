@@ -115,17 +115,17 @@ pub async fn move_remote(
 #[derive(Debug, Deserialize)]
 pub struct ArchiveFileQuery {
     #[serde(default)]
-    pub file_path: String,
+    pub path: String,
     #[serde(default)]
     pub overwrite: bool,
 }
 
-#[tracing::instrument(skip_all, fields(remote_path = %q.file_path, overwrite = %q.overwrite))]
+#[tracing::instrument(skip_all, fields(remote_path = %q.path, overwrite = %q.overwrite))]
 pub async fn archive(
     State(state): State<AppState>,
     ApiQuery(q): ApiQuery<ArchiveFileQuery>,
 ) -> Result<ApiResponse<String>, AppError> {
-    path_helpers::require_path(&q.file_path)?;
+    path_helpers::require_path(&q.path)?;
     let root = state.config.sftp.remote_root_dir.clone();
     let archive =
         path_helpers::to_path_str(state.config.sftp.archive_dir.as_deref(), "SFTP_ARCHIVE_DIR")?;
@@ -133,7 +133,7 @@ pub async fn archive(
     let final_path = state
         .sftp
         .with_session(move |session| {
-            move_remote_file(session, &root, &q.file_path, &archive, q.overwrite)
+            move_remote_file(session, &root, &q.path, &archive, q.overwrite)
         })
         .await?;
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n         INSERT INTO ntg_headers (\n             ntg_header, original_header, content_type,\n             content_length, column_index, required\n         )\n         VALUES ($1, $2, $3, $4, $5, $6)\n         ON CONFLICT (ntg_header) DO UPDATE SET\n             original_header = EXCLUDED.original_header,\n             content_type    = EXCLUDED.content_type,\n             content_length  = EXCLUDED.content_length,\n             column_index    = EXCLUDED.column_index,\n             required        = EXCLUDED.required,\n             updated_at      = now()\n         RETURNING\n             id, ntg_header, original_header,\n             content_type AS \"content_type!: NtgColumnType\",\n             content_length, column_index, required, deprecated,\n             deleted, created_at, updated_at, deleted_at\n         ",
+  "query": "SELECT\n            id,\n            ntg_header,\n            original_header,\n            content_type AS \"content_type!: NtgColumnType\",\n            content_length,\n            column_index,\n            required,\n            deprecated,\n            deleted,\n            created_at,\n            updated_at,\n            deleted_at\n        FROM\n            ntg_column_specs\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "ntg_header"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "original_header"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "content_type"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "content_length"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "column_index"
           }
         }
@@ -75,7 +75,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "required"
           }
         }
@@ -86,7 +86,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deprecated"
           }
         }
@@ -97,7 +97,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deleted"
           }
         }
@@ -108,7 +108,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "created_at"
           }
         }
@@ -119,7 +119,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "updated_at"
           }
         }
@@ -130,7 +130,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deleted_at"
           }
         }
@@ -138,12 +138,7 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Varchar",
-        "Text",
-        "Int4",
-        "Int4",
-        "Bool"
+        "Int8"
       ]
     },
     "nullable": [
@@ -161,5 +156,5 @@
       true
     ]
   },
-  "hash": "45dab2f58d766189f71a9755c1f916141dee7be28d1462aa00027db17f08a451"
+  "hash": "ee26d4999ef9724c6c43f01965aeb633fa5bef79d130bf84f6968f88953774b9"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            id,\n            ntg_header,\n            original_header,\n            content_type AS \"content_type!: NtgColumnType\",\n            content_length,\n            column_index,\n            required,\n            deprecated,\n            deleted,\n            created_at,\n            updated_at,\n            deleted_at\n        FROM\n            ntg_headers\n        ",
+  "query": "SELECT\n            id,\n            ntg_header,\n            original_header,\n            content_type AS \"content_type!: NtgColumnType\",\n            content_length,\n            column_index,\n            required,\n            deprecated,\n            deleted,\n            created_at,\n            updated_at,\n            deleted_at\n        FROM\n            ntg_column_specs\n        WHERE ntg_header = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "ntg_header"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "original_header"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "content_type"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "content_length"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "column_index"
           }
         }
@@ -75,7 +75,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "required"
           }
         }
@@ -86,7 +86,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deprecated"
           }
         }
@@ -97,7 +97,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deleted"
           }
         }
@@ -108,7 +108,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "created_at"
           }
         }
@@ -119,7 +119,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "updated_at"
           }
         }
@@ -130,14 +130,16 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "ntg_headers",
+            "table": "ntg_column_specs",
             "name": "deleted_at"
           }
         }
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -154,5 +156,5 @@
       true
     ]
   },
-  "hash": "ed1c003183954e18c295205e53b75ec0ffb39bd9bae68294001dc99b5f4c7be9"
+  "hash": "b81e705acc1f399ddce76694ce3e65c4d1d5d5831bf3d01b1a832b41040c5809"
 }

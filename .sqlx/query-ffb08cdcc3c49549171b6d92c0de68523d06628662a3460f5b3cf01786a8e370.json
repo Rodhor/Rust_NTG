@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM ntg_headers WHERE id = $1",
+  "query": "DELETE FROM ntg_column_specs WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "50b46bd3eb52c60a578afe95d515754d868b1e91e9d0b3d2a865188024447c49"
+  "hash": "ffb08cdcc3c49549171b6d92c0de68523d06628662a3460f5b3cf01786a8e370"
 }

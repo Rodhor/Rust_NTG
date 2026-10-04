@@ -1,1 +1,1 @@
-CREATE UNIQUE INDEX ntg_header_unique ON ntg_headers (ntg_header);
+CREATE UNIQUE INDEX ntg_column_specs_unique ON ntg_column_specs (ntg_header);
